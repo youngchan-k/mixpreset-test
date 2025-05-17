@@ -7,8 +7,10 @@ import { hasAdminAccess } from '@/lib/permissions';
 import { getAllDownloadRecords, DownloadRecord } from '@/lib/downloadTracking';
 import HeroSection from '@/components/HeroSection';
 
-// Set the S3 custom URL
-const PRESET_S3_URL = process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com";
+// Set the S3 custom URL with proper server-side rendering support
+const PRESET_S3_URL = typeof window !== 'undefined'
+  ? process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com"
+  : "preset.mixpreset.com";
 
 // Chart component for metrics visualization
 const MetricsChart = ({ data, label, color = 'blue' }: { data: number[], label: string, color?: string }) => {
@@ -170,7 +172,7 @@ export default function AdminContentPage() {
   const fetchPresetMetadata = async () => {
     try {
       // Categories in S3
-      const CATEGORIES = ['vocal_fx', 'vocal_chain', 'instrument'];
+      const CATEGORIES = ['premium', 'vocal_chain', 'instrument'];
       const metadataMap = new Map<string, PresetMetadata>();
       const categoryData: {label: string, count: number}[] = [];
 
@@ -182,6 +184,9 @@ export default function AdminContentPage() {
 
       // Track monthly preset creation
       const monthlyData = Array(6).fill(0); // Last 6 months
+
+      // Define the specific category order
+      const categoryOrder = ["premium", "vocal_chain", "instrument"];
 
       for (const category of CATEGORIES) {
         try {

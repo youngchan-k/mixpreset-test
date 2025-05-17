@@ -23,12 +23,12 @@ const useFavorites = (userId: string | undefined) => {
   const [favoritePresets, setFavoritePresets] = useState<Preset[]>([]);
   const [loading, setLoading] = useState(true);
   const [categorizedPresets, setCategorizedPresets] = useState<{
+    premium: Preset[];
     vocal_chain: Preset[];
-    vocal_fx: Preset[];
     instrument: Preset[];
   }>({
+    premium: [],
     vocal_chain: [],
-    vocal_fx: [],
     instrument: []
   });
 
@@ -86,10 +86,10 @@ const useFavorites = (userId: string | undefined) => {
     const favPresets = presets.filter(preset => favoritesObj[preset.id]);
     setFavoritePresets(favPresets);
 
-    // Categorize by preset type with specific order: vocal chain, vocal fx, instrument
+    // Categorize by preset type with specific order: premium, vocal chain, instrument
     const categorized = {
+      premium: favPresets.filter(p => p.category === 'premium'),
       vocal_chain: favPresets.filter(p => p.category === 'vocal_chain'),
-      vocal_fx: favPresets.filter(p => p.category === 'vocal_fx'),
       instrument: favPresets.filter(p => p.category === 'instrument')
     };
 
@@ -128,8 +128,8 @@ const useFavorites = (userId: string | undefined) => {
 
     // Update categorized presets in the right order
     setCategorizedPresets({
+      premium: categorizedPresets.premium.filter(p => p.id !== presetId),
       vocal_chain: categorizedPresets.vocal_chain.filter(p => p.id !== presetId),
-      vocal_fx: categorizedPresets.vocal_fx.filter(p => p.id !== presetId),
       instrument: categorizedPresets.instrument.filter(p => p.id !== presetId)
     });
 
@@ -230,7 +230,7 @@ function FavoritesContent() {
   // Get category title for display - memoized
   const getCategoryTitle = useCallback((category: string): string => {
     switch(category) {
-      case 'vocal_fx': return 'Vocal FX';
+      case 'premium': return 'Premium';
       case 'vocal_chain': return 'Vocal Chain';
       case 'instrument': return 'Instrument';
       default: return category.replace('_', ' ');
@@ -247,6 +247,10 @@ function FavoritesContent() {
     shape: "curved" as const,
     customGradient: "bg-gradient-to-r from-purple-800/90 to-purple-600/90"
   }), []);
+
+  // Define the specific category order
+  const categoryOrder = ["premium", "vocal_chain", "instrument"] as const;
+  type CategoryType = typeof categoryOrder[number];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -317,17 +321,17 @@ function FavoritesContent() {
                 </div>
 
                 {/* Display favorites by category */}
-                {Object.entries(categorizedPresets).map(([category, presets]) => {
-                  if (presets.length === 0) return null;
+                {categoryOrder.map((category: CategoryType) => {
+                  if (categorizedPresets[category].length === 0) return null;
 
                   return (
                     <div key={category} className="mb-10">
                       <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b pb-2">
-                        {getCategoryTitle(category)} ({presets.length})
+                        {getCategoryTitle(category)} ({categorizedPresets[category].length})
                       </h3>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                        {presets.map(preset => (
+                        {categorizedPresets[category].map((preset: Preset) => (
                           <div
                             key={preset.id}
                             className="group bg-white rounded-2xl overflow-hidden shadow-lg border border-gray-200
@@ -388,7 +392,7 @@ function FavoritesContent() {
                                 </>
                               ) : (
                                 <div className="flex h-full items-center justify-center">
-                                  <span className="text-2xl text-white">{getCategoryTitle(preset.category)}</span>
+                                  <span className="text-2xl text-white">{getCategoryTitle(category)}</span>
                                 </div>
                               )}
 

@@ -3,7 +3,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { PresetAudioProps, AudioPlaying } from './types';
 
-const PRESET_S3_URL = process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com";
+// Set the S3 custom URL with proper server-side rendering support
+const PRESET_S3_URL = typeof window !== 'undefined'
+  ? process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com"
+  : "preset.mixpreset.com";
 
 // Helper function to get preset file URL
 const getPresetFileUrl = async (objectKey: string, allPresets: any[]): Promise<string> => {

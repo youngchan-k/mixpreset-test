@@ -32,7 +32,7 @@ export interface DownloadRecord {
   userEmail: string;    // User's email address
   presetId: string;     // Preset ID
   presetName: string;   // Human readable preset name
-  presetCategory: string; // Vocal FX, Vocal Chain, Instrument
+  presetCategory: string; // Premium, Vocal Chain, Instrument
   downloadTime: number; // Unix timestamp in milliseconds
   downloadUrl?: string; // Optional signed URL for re-download
   fileName: string;     // Name of the downloaded file
@@ -163,17 +163,8 @@ export async function recordDownload(
 
             // If we can identify the bucket name in the path, remove it
             if (pathnameParts.length > 1) {
-              // Remove bucket name if it's the first part
-              const bucketFromUrl = pathnameParts[0];
-              const configBucket = process.env.NEXT_PUBLIC_S3_BUCKET;
-
-              if (bucketFromUrl === configBucket) {
-                // Store just the key part (everything after the bucket name)
-                storedDownloadUrl = pathnameParts.slice(1).join('/');
-              } else {
-                // If we can't match the bucket, just store the whole path
-                storedDownloadUrl = pathnameParts.join('/');
-              }
+              // Just store the path without bucket dependency
+              storedDownloadUrl = pathnameParts.join('/');
             }
           } else {
             // For non-S3 URLs, we store the original URL
@@ -230,6 +221,13 @@ export async function recordDownload(
     // Make sure we're dealing with a number
     const finalCredits = recordForPricing ? 0 : (credits !== undefined && typeof credits === 'number' ? credits : 1);
 
+    // Validate preset category - ensure it's one of the allowed categories
+    let validatedCategory = presetCategory;
+    if (!['Premium', 'Vocal Chain', 'Instrument'].includes(presetCategory)) {
+      // Default to Premium if the category isn't recognized
+      validatedCategory = 'Premium';
+    }
+
     // Log credit information clearly
     if (finalCredits > 0) {
       // Record the credit transaction in the credit tracking system
@@ -254,7 +252,7 @@ export async function recordDownload(
       userEmail: userEmail || 'anonymous@user.com',
       presetId,
       presetName: finalPresetName,
-      presetCategory,
+      presetCategory: validatedCategory,
       downloadTime: timestamp,
       downloadUrl: storedDownloadUrl,
       fileName: fileName || finalPresetName,
@@ -443,9 +441,9 @@ export function formatPresetNameForDisplay(presetName: string): string {
 
   // For vocal presets with proper structure, format them nicely
   if (parts[0] === 'vocal' && parts.length >= 3) {
-    // For vocal_chain and vocal_fx, use a proper format
-    if (parts[1] === 'chain' || parts[1] === 'fx') {
-      // Extract the meaningful part (after chain_/fx_)
+    // For vocal_chain, use a proper format
+    if (parts[1] === 'chain') {
+      // Extract the meaningful part (after chain_)
       const meaningfulParts = parts.slice(2);
       if (meaningfulParts.length > 0) {
         return meaningfulParts

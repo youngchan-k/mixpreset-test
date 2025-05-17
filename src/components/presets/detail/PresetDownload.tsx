@@ -9,8 +9,10 @@ import { PresetDownloadProps, DownloadItem } from './types';
 import DownloadConfirmModal from '../../modals/DownloadConfirmModal';
 import InsufficientCreditsModal from '../../modals/InsufficientCreditsModal';
 
-// Set the S3 custom URL
-const PRESET_S3_URL = process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com";
+// Set the S3 custom URL with proper server-side rendering support
+const PRESET_S3_URL = typeof window !== 'undefined'
+  ? process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com"
+  : "preset.mixpreset.com";
 
 /**
  * NOTE: This component is currently not used in the main PresetDetail view.

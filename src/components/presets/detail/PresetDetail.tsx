@@ -339,7 +339,10 @@ function PresetDetail({ onNavigate, presetId, onAuthRequired }: PresetDetailProp
                               // If all formats fail, try constructing a more reliable path
                               const category = preset.category;
                               const presetId = preset.id.replace(/\s+/g, '_');
-                              target.src = `https://${process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com"}/${category}/${presetId}/image.png`;
+                              const s3Url = typeof window !== 'undefined'
+                                ? process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com"
+                                : "preset.mixpreset.com";
+                              target.src = `https://${s3Url}/${category}/${presetId}/image.png`;
 
                               // Set up one more fallback for the last attempt
                               target.onerror = () => {

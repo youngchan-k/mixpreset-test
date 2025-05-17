@@ -4,8 +4,10 @@ import { usePresets, Preset } from './PresetsContext';
 // Configure optimal values for performance
 const CATEGORIES = ['premium', 'vocal_chain', 'instrument'];
 
-// Set the S3 custom URL
-const PRESET_S3_URL = process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com";
+// Set the S3 custom URL with proper server-side rendering support
+const PRESET_S3_URL = typeof window !== 'undefined'
+  ? process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com"
+  : "preset.mixpreset.com";
 
 interface PresetSyncProps {
   activeFilters: {

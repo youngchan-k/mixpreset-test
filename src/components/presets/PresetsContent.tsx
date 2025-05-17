@@ -484,13 +484,6 @@ function PresetsPage({ onNavigate, onAuthRequired, initialTab = 'premium' }: Pre
     plugin: ['Stock', 'Waves', 'Professional']
   };
 
-  // const vocalFxFilters = {
-  //   daw: ['Ableton', 'FL Studio', 'Pro Tools', 'Logic Pro', 'GarageBand', 'Studio One'],
-  //   effect: ['AutoTune', 'Reverb', 'Delay', 'Chorus', 'Distortion', 'Vocoder', 'Harmonizer', 'Compression'],
-  //   genre: ['Hip Hop', 'Pop', 'EDM', 'Rock', 'Experimental'],
-  //   style: ['Subtle', 'Moderate', 'Extreme']
-  // };
-
   const instrumentFilters = {
     daw: ['Ableton', 'FL Studio', 'Pro Tools', 'Logic Pro', 'GarageBand', 'Studio One', 'Cubase'],
     instrument: ['Piano', 'Guitar', 'Drums', 'Bass', 'Synth', 'Strings', 'Brass', 'Woodwinds', 'Percussion'],

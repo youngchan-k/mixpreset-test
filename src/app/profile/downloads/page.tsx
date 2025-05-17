@@ -16,8 +16,10 @@ import {
 import { getUserCreditBalance } from '@/lib/creditTracking';
 import { useRouter } from 'next/navigation';
 
-// Set the S3 custom URL
-const PRESET_S3_URL = process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com";
+// Set the S3 custom URL with proper server-side rendering support
+const PRESET_S3_URL = typeof window !== 'undefined'
+  ? process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com"
+  : "preset.mixpreset.com";
 
 // Custom hook for download history
 const useDownloadHistory = (userId: string | undefined) => {
@@ -281,7 +283,7 @@ export default function DownloadsPage() {
 
     // Split by underscore to see if first part is a known category
     const parts = urlSafeId.split('_');
-    const knownCategories = ["vocal_chain", "vocal_fx", "instrument"];
+    const knownCategories = ["premium", "vocal_chain", "instrument"];
 
     // Try to extract category and preset ID
     if (parts.length > 1 && knownCategories.includes(parts[0])) {
@@ -339,7 +341,7 @@ export default function DownloadsPage() {
   // Memoize category order
   const orderedCategories = useMemo(() => {
     // Define the specific category order
-    const categoryOrder = ["vocal_chain", "vocal_fx", "instrument"];
+    const categoryOrder = ["premium", "vocal_chain", "instrument"];
 
     // Get all categories from the grouped downloads
     const allCategories = Object.keys(groupedDownloads);

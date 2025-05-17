@@ -43,7 +43,7 @@ function FAQContent() {
     presets: [
       {
         question: "What types of presets do you offer?",
-        answer: "We offer three main categories of presets: Vocal Chains (complete processing chains for vocals), Vocal FX (creative effects for vocals), and Instrument Presets (processing chains for drums, bass, guitars, etc.)."
+        answer: "We offer three main categories of presets: Premium (high-quality presets for professional use), Vocal Chains (complete processing chains for vocals), and Instrument Presets (processing chains for drums, bass, guitars, etc.)."
       },
       {
         question: "Are the presets compatible with my DAW?",

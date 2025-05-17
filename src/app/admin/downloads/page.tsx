@@ -266,7 +266,7 @@ export default function AdminDownloadsPage() {
                       <option value="">All Categories</option>
                       {(() => {
                         // Define the specific category order
-                        const categoryOrder = ["vocal_chain", "vocal_fx", "instrument"];
+                        const categoryOrder = ["premium", "vocal_chain", "instrument"];
 
                         // Create ordered list of categories (specified ones first, then sort others alphabetically)
                         const orderedCategories = [
