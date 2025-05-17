@@ -72,23 +72,10 @@ export const usePresets = () => {
 };
 
 export const PresetsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Initialize state with data from localStorage if available
-  const [presets, setPresets] = useState<Preset[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const savedPresets = localStorage.getItem('all_presets');
-        const parsedPresets = savedPresets ? JSON.parse(savedPresets) : [];
-        return Array.isArray(parsedPresets) ? parsedPresets : [];
-      } catch (e) {
-        return [];
-      }
-    }
-    return [];
-  });
-
+  // Initialize state with empty array for server-side rendering
+  const [presets, setPresets] = useState<Preset[]>([]);
   const [filteredPresets, setFilteredPresets] = useState<Preset[]>([]);
   const [totalPresets, setTotalPresets] = useState<number>(0);
-  // Always start with loading true to prevent premature "No presets" message
   const [loading, setLoading] = useState<boolean>(true);
 
   // Use a ref to track mounted state to prevent state updates after unmount
@@ -99,6 +86,21 @@ export const PresetsProvider: React.FC<{ children: ReactNode }> = ({ children })
     return () => {
       isMounted.current = false;
     };
+  }, []);
+
+  // Load presets from localStorage only on client-side
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedPresets = localStorage.getItem('all_presets');
+        const parsedPresets = savedPresets ? JSON.parse(savedPresets) : [];
+        if (Array.isArray(parsedPresets) && parsedPresets.length > 0) {
+          setPresets(parsedPresets);
+        }
+      } catch (e) {
+        // Handle storage errors silently
+      }
+    }
   }, []);
 
   // Save presets to localStorage whenever they change - debounced
@@ -183,89 +185,37 @@ export const PresetsProvider: React.FC<{ children: ReactNode }> = ({ children })
     // First check sessionStorage if in browser context
     if (typeof window !== 'undefined') {
       try {
-        // Check if we have this preset directly cached by full ID
-        const sessionPreset = sessionStorage.getItem(`preset_${decodedId}`);
-        if (sessionPreset) {
-          return JSON.parse(sessionPreset);
+        // Try direct ID first
+        const directPreset = sessionStorage.getItem(`preset_${actualPresetId}`);
+        if (directPreset) {
+          return JSON.parse(directPreset);
         }
 
-        // Try with the actual preset ID
-        const actualSessionPreset = sessionStorage.getItem(`preset_${actualPresetId}`);
-        if (actualSessionPreset) {
-          return JSON.parse(actualSessionPreset);
-        }
-
-        // Try with spaces instead of underscores
-        const actualPresetIdWithSpaces = actualPresetId.replace(/_+/g, ' ');
-        const spacedSessionPreset = sessionStorage.getItem(`preset_${actualPresetIdWithSpaces}`);
-        if (spacedSessionPreset) {
-          return JSON.parse(spacedSessionPreset);
-        }
-
-        // Get all presets and find by ID logic
-        const allStoredPresets = sessionStorage.getItem('all_presets');
-        if (allStoredPresets) {
-          const storedPresets = JSON.parse(allStoredPresets) as Preset[];
-
-          // Look for a preset with exactly this ID
-          let foundPreset = storedPresets.find(p => p.id === actualPresetId);
-
-          // If not found by direct ID, also try with spaces instead of underscores
-          if (!foundPreset) {
-            foundPreset = storedPresets.find(p => p.id === actualPresetIdWithSpaces);
-          }
-
-          // If not found by direct ID, try to see if any preset with matching category has this ID
-          if (!foundPreset && categories.includes(possibleCategory)) {
-            foundPreset = storedPresets.find(p =>
-              p.category === possibleCategory &&
-              (p.id === actualPresetId || p.id === actualPresetIdWithSpaces)
-            );
-          }
-
-          if (foundPreset) {
-            // Cache this result for future lookups
-            try {
-              sessionStorage.setItem(`preset_${decodedId}`, JSON.stringify(foundPreset));
-            } catch (e) {
-              // Handle storage errors silently
-            }
-            return foundPreset;
+        // Try with category prefix
+        if (possibleCategory && categories.includes(possibleCategory)) {
+          const categoryPrefixedId = `${possibleCategory}_${actualPresetId}`;
+          const categoryPreset = sessionStorage.getItem(`preset_${categoryPrefixedId}`);
+          if (categoryPreset) {
+            return JSON.parse(categoryPreset);
           }
         }
-      } catch (err) {
-        // Fall back to checking the local state
-      }
-    }
-
-    // If not found in sessionStorage, check the local state
-    // Direct match with the preset ID (without category)
-    let foundPreset = presets.find(p => p.id === actualPresetId);
-
-    // If not found, try with spaces instead of underscores
-    if (!foundPreset) {
-      const actualPresetIdWithSpaces = actualPresetId.replace(/_+/g, ' ');
-      foundPreset = presets.find(p => p.id === actualPresetIdWithSpaces);
-    }
-
-    // If not found and we have a category, try to match by category + id
-    if (!foundPreset && categories.includes(possibleCategory)) {
-      foundPreset = presets.find(p =>
-        p.category === possibleCategory &&
-        (p.id === actualPresetId || p.id === actualPresetId.replace(/_+/g, ' '))
-      );
-    }
-
-    // Cache the result if found
-    if (foundPreset && typeof window !== 'undefined') {
-      try {
-        sessionStorage.setItem(`preset_${decodedId}`, JSON.stringify(foundPreset));
       } catch (e) {
         // Handle storage errors silently
       }
     }
 
-    return foundPreset || null;
+    // Then check in memory
+    const preset = presets.find(p => p.id === actualPresetId);
+    if (preset) {
+      return preset;
+    }
+
+    // If not found in memory, try with category prefix
+    if (possibleCategory && categories.includes(possibleCategory)) {
+      return presets.find(p => p.id === actualPresetId && p.category === possibleCategory) || null;
+    }
+
+    return null;
   }, [presets]);
 
   // Memoize the context value to prevent unnecessary re-renders

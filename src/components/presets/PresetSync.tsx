@@ -7,7 +7,7 @@ const CATEGORIES = ['premium', 'vocal_chain', 'instrument'];
 // Set the S3 custom URL with proper server-side rendering support
 const PRESET_S3_URL = typeof window !== 'undefined'
   ? process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com"
-  : "preset.mixpreset.com";
+  : process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com";
 
 interface PresetSyncProps {
   activeFilters: {
@@ -210,7 +210,12 @@ const PresetSync = ({
       const indexUrl = `https://${PRESET_S3_URL}/index.json`;
 
       try {
-        const indexResponse = await fetch(indexUrl);
+        const indexResponse = await fetch(indexUrl, {
+          // Add cache control for better performance
+          cache: 'force-cache',
+          next: { revalidate: 3600 } // Revalidate every hour
+        });
+
         if (indexResponse.ok) {
           const indexData = await indexResponse.json();
 
@@ -222,14 +227,18 @@ const PresetSync = ({
           }
         }
       } catch (error) {
-        console.warn("No index file found, trying direct folder discovery");
+        // Silently continue to fallback method
       }
 
       // Fallback to querying the directory
       const folderUrl = `https://${PRESET_S3_URL}/${category}/`;
 
       try {
-        const response = await fetch(folderUrl);
+        const response = await fetch(folderUrl, {
+          cache: 'force-cache',
+          next: { revalidate: 3600 }
+        });
+
         if (response.ok) {
           const text = await response.text();
           const folderMatches = text.match(/<Key>(.*?)\/<\/Key>/g);
@@ -241,12 +250,11 @@ const PresetSync = ({
           }
         }
       } catch (error) {
-        console.warn("Error listing directory contents:", error);
+        // Silently continue
       }
 
       return [];
     } catch (error) {
-      console.error("Error discovering folders:", error);
       return [];
     }
   };
@@ -289,7 +297,11 @@ const PresetSync = ({
       // Try to fetch metadata
       const metaUrl = `https://${PRESET_S3_URL}/${folderPath}meta.json`;
       try {
-        const metaResponse = await fetch(metaUrl);
+        const metaResponse = await fetch(metaUrl, {
+          cache: 'force-cache',
+          next: { revalidate: 3600 }
+        });
+
         if (metaResponse.ok) {
           const metaData = await metaResponse.json();
 
@@ -331,7 +343,6 @@ const PresetSync = ({
       }
 
       // Set image URLs directly without HEAD requests - UI will handle fallbacks
-      // Try JPEG first as it's most common
       presetData.image = `https://${PRESET_S3_URL}/${folderPath}image.jpeg`;
 
       // Set MP3 URLs directly - UI will handle fallbacks if they don't exist
