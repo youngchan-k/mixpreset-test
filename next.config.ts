@@ -18,14 +18,6 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'preset.mixpreset.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'mixpreset-preset.s3.amazonaws.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'mixpreset-preset.s3.us-east-1.amazonaws.com',
       }
     ],
     formats: ['image/webp'],
@@ -38,6 +30,10 @@ const nextConfig: NextConfig = {
       use: ['@svgr/webpack']
     });
     return config;
+  },
+  // Add environment variables that should be available on both client and server
+  env: {
+    NEXT_PUBLIC_PRESET_S3_URL: process.env.NEXT_PUBLIC_PRESET_S3_URL || 'preset.mixpreset.com',
   },
   // Add other configuration options as needed
 };

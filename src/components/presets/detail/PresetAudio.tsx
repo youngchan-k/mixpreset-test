@@ -3,63 +3,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { PresetAudioProps, AudioPlaying } from './types';
 
-// Set the S3 custom URL with proper server-side rendering support
-const PRESET_S3_URL = typeof window !== 'undefined'
-  ? process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com"
-  : "preset.mixpreset.com";
-
-// Helper function to get preset file URL
-const getPresetFileUrl = async (objectKey: string, allPresets: any[]): Promise<string> => {
-  try {
-    // Validate the objectKey
-    if (!objectKey || typeof objectKey !== 'string' || objectKey.trim() === '') {
-      console.error("[getPresetFileUrl] Invalid objectKey:", objectKey);
-      throw new Error("Invalid object key");
-    }
-
-    // If the objectKey is already a complete URL, return it directly
-    if (objectKey.startsWith('http://') || objectKey.startsWith('https://')) {
-      return objectKey;
-    }
-
-    // Extract category and preset ID from path
-    const pathParts = objectKey.split('/');
-    if (pathParts.length >= 2) {
-      const category = pathParts[0];
-      const presetFolderId = pathParts[1];
-
-      // Find matching preset in our data
-      const matchingPreset = allPresets.find(p =>
-        p.category === category &&
-        (p.id.replace(/\s+/g, '_') === presetFolderId || p.id === presetFolderId)
-      );
-
-      if (matchingPreset) {
-        // Check which type of file is being requested
-        if (objectKey.endsWith('full_preset.zip') && matchingPreset.fullPreset) {
-          return matchingPreset.fullPreset;
-        }
-
-        if (objectKey.includes('mp3/before.mp3') && matchingPreset.mp3s.before) {
-          return matchingPreset.mp3s.before;
-        }
-
-        if (objectKey.includes('mp3/after.mp3') && matchingPreset.mp3s.after) {
-          return matchingPreset.mp3s.after;
-        }
-      }
-    }
-
-    // Fallback to direct S3 URL construction
-    return `https://${PRESET_S3_URL}/${objectKey}`;
-  } catch (error) {
-    console.error("[getPresetFileUrl] Error getting file URL:", error);
-    // Fallback to traditional S3 URL
-    return `https://${PRESET_S3_URL}/${objectKey}`;
-  }
-};
-
 const PresetAudio: React.FC<PresetAudioProps> = ({ preset, presets }) => {
+  // Add state for S3 URL
+  const [presetS3Url, setPresetS3Url] = useState("preset.mixpreset.com");
   const [playingAudio, setPlayingAudio] = useState<AudioPlaying | null>(null);
   const [audioProgress, setAudioProgress] = useState<{[key: string]: number}>({});
   const [audioDuration, setAudioDuration] = useState<{[key: string]: number}>({});
@@ -75,6 +21,12 @@ const PresetAudio: React.FC<PresetAudioProps> = ({ preset, presets }) => {
   const animationFrameRef = useRef<number | null>(null);
   const mouseMoveHandlerRef = useRef<{[key: string]: ((e: MouseEvent) => void) | null}>({});
   const mouseUpHandlerRef = useRef<{[key: string]: (() => void) | null}>({});
+
+  // Set up the S3 URL properly once we're client-side
+  useEffect(() => {
+    // This will only run on the client
+    setPresetS3Url(process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com");
+  }, []);
 
   // Set up smooth progress bar animation
   useEffect(() => {
@@ -163,7 +115,7 @@ const PresetAudio: React.FC<PresetAudioProps> = ({ preset, presets }) => {
             // First try with the preset folder path construction
             const category = preset.category;
             const presetId = preset.id.replace(/\s+/g, '_');
-            const fallbackUrl = `https://${PRESET_S3_URL}/${category}/${presetId}/mp3/${type}.mp3`;
+            const fallbackUrl = `https://${presetS3Url}/${category}/${presetId}/mp3/${type}.mp3`;
 
             // Try again with constructed URL
             loadAudio(fallbackUrl, type, 1);
@@ -172,7 +124,7 @@ const PresetAudio: React.FC<PresetAudioProps> = ({ preset, presets }) => {
             // Second try with direct S3 URL if we have a complete URL
             if (url.includes('://')) {
               const pathOnly = url.split('://')[1].split('/').slice(1).join('/');
-              const fallbackUrl = `https://${PRESET_S3_URL}/${pathOnly}`;
+              const fallbackUrl = `https://${presetS3Url}/${pathOnly}`;
               loadAudio(fallbackUrl, type, 2);
             } else {
               // If we don't have a URL with protocol, just retry once more with the same URL
@@ -197,7 +149,7 @@ const PresetAudio: React.FC<PresetAudioProps> = ({ preset, presets }) => {
         // First try to directly resolve the URL if it's a relative path
         let resolvedUrl = url;
         if (!url.startsWith('http')) {
-          resolvedUrl = `https://${PRESET_S3_URL}/${url}`;
+          resolvedUrl = `https://${presetS3Url}/${url}`;
         }
 
         // Set the source and load the audio
@@ -208,7 +160,7 @@ const PresetAudio: React.FC<PresetAudioProps> = ({ preset, presets }) => {
           // Try with a more reliable path construction
           const category = preset.category;
           const presetId = preset.id.replace(/\s+/g, '_');
-          const fallbackUrl = `https://${PRESET_S3_URL}/${category}/${presetId}/mp3/${type}.mp3`;
+          const fallbackUrl = `https://${presetS3Url}/${category}/${presetId}/mp3/${type}.mp3`;
 
           setTimeout(() => {
             loadAudio(fallbackUrl, type, retryCount + 1);
@@ -229,7 +181,7 @@ const PresetAudio: React.FC<PresetAudioProps> = ({ preset, presets }) => {
       // Try with the standard expected path even if not provided
       const category = preset.category;
       const presetId = preset.id.replace(/\s+/g, '_');
-      const fallbackUrl = `https://${PRESET_S3_URL}/${category}/${presetId}/mp3/before.mp3`;
+      const fallbackUrl = `https://${presetS3Url}/${category}/${presetId}/mp3/before.mp3`;
       loadAudio(fallbackUrl, 'before');
     }
 
@@ -239,7 +191,7 @@ const PresetAudio: React.FC<PresetAudioProps> = ({ preset, presets }) => {
       // Try with the standard expected path even if not provided
       const category = preset.category;
       const presetId = preset.id.replace(/\s+/g, '_');
-      const fallbackUrl = `https://${PRESET_S3_URL}/${category}/${presetId}/mp3/after.mp3`;
+      const fallbackUrl = `https://${presetS3Url}/${category}/${presetId}/mp3/after.mp3`;
       loadAudio(fallbackUrl, 'after');
     }
 
@@ -299,107 +251,6 @@ const PresetAudio: React.FC<PresetAudioProps> = ({ preset, presets }) => {
       audio.play().catch(err => console.error('Error playing audio:', err));
       setPlayingAudio({ audio, type });
     }
-  };
-
-  // Handle progress bar click/drag
-  const handleProgressBarClick = (e: React.MouseEvent<HTMLDivElement>, type: string) => {
-    if (!audioElements[type]) return;
-
-    const progressBar = e.currentTarget;
-    const rect = progressBar.getBoundingClientRect();
-    const offsetX = e.clientX - rect.left;
-    const width = rect.width;
-    const percentage = offsetX / width;
-    const audio = audioElements[type];
-
-    // Calculate the new time based on the percentage
-    const newTime = percentage * (audioDuration[type] || 0);
-
-    // Set the new time
-    audio.currentTime = newTime;
-
-    // Update the progress immediately for visual feedback
-    setAudioProgress(prev => ({
-      ...prev,
-      [type]: percentage * 100
-    }));
-
-    setAudioCurrentTime(prev => ({
-      ...prev,
-      [type]: newTime
-    }));
-  };
-
-  // Setup for drag functionality
-  const handleProgressBarMouseDown = (e: React.MouseEvent<HTMLDivElement>, type: string) => {
-    if (!audioElements[type]) return;
-
-    e.preventDefault();
-
-    // Set dragging state
-    setIsDragging(prev => ({
-      ...prev,
-      [type]: true
-    }));
-
-    const progressBar = e.currentTarget;
-    const audio = audioElements[type];
-
-    // Create the handler to update time during dragging
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      if (isDragging[type]) {
-        const rect = progressBar.getBoundingClientRect();
-        const offsetX = Math.max(0, Math.min(moveEvent.clientX - rect.left, rect.width));
-        const percentage = offsetX / rect.width;
-
-        // Update progress bar visually during drag
-        setAudioProgress(prev => ({
-          ...prev,
-          [type]: percentage * 100
-        }));
-
-        // Calculate the new time but don't set it on the audio yet
-        const newTime = percentage * (audioDuration[type] || 0);
-        setAudioCurrentTime(prev => ({
-          ...prev,
-          [type]: newTime
-        }));
-      }
-    };
-
-    // Create handler to finish dragging
-    const handleMouseUp = () => {
-      if (isDragging[type]) {
-        // Set dragging state to false
-        setIsDragging(prev => ({
-          ...prev,
-          [type]: false
-        }));
-
-        // Get the current progress value
-        const progress = audioProgress[type] || 0;
-
-        // Calculate and set the final audio time
-        const newTime = (progress / 100) * (audioDuration[type] || 0);
-        audio.currentTime = newTime;
-
-        // Remove event listeners
-        document.removeEventListener('mousemove', mouseMoveHandlerRef.current[type]!);
-        document.removeEventListener('mouseup', mouseUpHandlerRef.current[type]!);
-
-        // Clear references
-        mouseMoveHandlerRef.current[type] = null;
-        mouseUpHandlerRef.current[type] = null;
-      }
-    };
-
-    // Save handlers to refs for cleanup
-    mouseMoveHandlerRef.current[type] = handleMouseMove;
-    mouseUpHandlerRef.current[type] = handleMouseUp;
-
-    // Add global event listeners
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
   };
 
   // Format seconds to MM:SS

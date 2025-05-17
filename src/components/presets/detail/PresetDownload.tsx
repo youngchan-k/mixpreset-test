@@ -9,15 +9,7 @@ import { PresetDownloadProps, DownloadItem } from './types';
 import DownloadConfirmModal from '../../modals/DownloadConfirmModal';
 import InsufficientCreditsModal from '../../modals/InsufficientCreditsModal';
 
-// Set the S3 custom URL with proper server-side rendering support
-const PRESET_S3_URL = typeof window !== 'undefined'
-  ? process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com"
-  : "preset.mixpreset.com";
 
-/**
- * NOTE: This component is currently not used in the main PresetDetail view.
- * It's kept for reference or potential reuse elsewhere in the application.
- */
 const PresetDownload: React.FC<PresetDownloadProps> = ({
   preset,
   downloadHistory,
@@ -26,13 +18,19 @@ const PresetDownload: React.FC<PresetDownloadProps> = ({
   onNavigate
 }) => {
   const { currentUser } = useAuth();
-
-  const [selectedPurchaseOption, setSelectedPurchaseOption] = useState<'full'>('full');
+  // Add state for S3 URL
+  const [presetS3Url, setPresetS3Url] = useState("preset.mixpreset.com");
   const [availableCredits, setAvailableCredits] = useState<number>(0);
   const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
   const [showInsufficientCreditsModal, setShowInsufficientCreditsModal] = useState<boolean>(false);
   const [processingDownload, setProcessingDownload] = useState<boolean>(false);
   const [freeRedownload, setFreeRedownload] = useState<boolean>(false);
+
+  // Set up the S3 URL properly once we're client-side
+  useEffect(() => {
+    // This will only run on the client
+    setPresetS3Url(process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com");
+  }, []);
 
   // Check if current preset was previously downloaded and still eligible for free redownload
   useEffect(() => {
@@ -122,11 +120,11 @@ const PresetDownload: React.FC<PresetDownloadProps> = ({
       }
 
       // Fallback to traditional S3 URL construction if we couldn't find the URL in our data
-      return `https://${PRESET_S3_URL}/${cleanKey}`;
+      return `https://${presetS3Url}/${cleanKey}`;
     } catch (error) {
       console.error("[getPresetFileUrl] Error getting file URL:", error);
       // Fallback to traditional S3 URL
-      return `https://${PRESET_S3_URL}/${objectKey.replace(/^https?:\/\/[^\/]+\//, '')}`;
+      return `https://${presetS3Url}/${objectKey.replace(/^https?:\/\/[^\/]+\//, '')}`;
     }
   };
 

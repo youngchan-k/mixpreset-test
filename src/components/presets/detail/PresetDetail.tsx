@@ -22,6 +22,8 @@ interface PresetDetailProps {
 function PresetDetail({ onNavigate, presetId, onAuthRequired }: PresetDetailProps) {
   const { currentUser } = useAuth();
   const { getPresetById } = usePresets();
+  // Add state for S3 URL
+  const [presetS3Url, setPresetS3Url] = useState("preset.mixpreset.com");
 
   // URL decode the presetId if it's encoded
   const decodedPresetId = presetId ? decodeURIComponent(presetId) : null;
@@ -56,6 +58,12 @@ function PresetDetail({ onNavigate, presetId, onAuthRequired }: PresetDetailProp
     vocal_chain: 0,
     instrument: 0
   });
+
+  // Set up the S3 URL properly once we're client-side
+  useEffect(() => {
+    // This will only run on the client
+    setPresetS3Url(process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com");
+  }, []);
 
   // Function to retry loading the preset
   const retryLoadingPreset = () => {
@@ -339,10 +347,7 @@ function PresetDetail({ onNavigate, presetId, onAuthRequired }: PresetDetailProp
                               // If all formats fail, try constructing a more reliable path
                               const category = preset.category;
                               const presetId = preset.id.replace(/\s+/g, '_');
-                              const s3Url = typeof window !== 'undefined'
-                                ? process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com"
-                                : "preset.mixpreset.com";
-                              target.src = `https://${s3Url}/${category}/${presetId}/image.png`;
+                              target.src = `https://${presetS3Url}/${category}/${presetId}/image.png`;
 
                               // Set up one more fallback for the last attempt
                               target.onerror = () => {

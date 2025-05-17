@@ -4,11 +4,6 @@ import { usePresets, Preset } from './PresetsContext';
 // Configure optimal values for performance
 const CATEGORIES = ['premium', 'vocal_chain', 'instrument'];
 
-// Set the S3 custom URL with proper server-side rendering support
-const PRESET_S3_URL = typeof window !== 'undefined'
-  ? process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com"
-  : process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com";
-
 interface PresetSyncProps {
   activeFilters: {
     category?: string | null;
@@ -35,6 +30,8 @@ const PresetSync = ({
 }: PresetSyncProps) => {
   const { setPresets, setFilteredPresets, setTotalPresets, setLoading, updatePresetsState } = usePresets();
   const [retryCount, setRetryCount] = useState(0);
+  // Add state for S3 URL
+  const [presetS3Url, setPresetS3Url] = useState("preset.mixpreset.com");
 
   // Add ref for preset cache to maintain across renders
   const presetsCache = useRef<Map<string, Preset[]>>(new Map());
@@ -44,6 +41,12 @@ const PresetSync = ({
   const allPresetsRef = useRef<Preset[]>([]);
   // Add timestamp for last successful fetch
   const lastSuccessfulFetch = useRef<number>(0);
+
+  // Set up the S3 URL properly once we're client-side
+  useEffect(() => {
+    // This will only run on the client
+    setPresetS3Url(process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com");
+  }, []);
 
   // Stable version of active filters that won't change on every render
   const stableActiveFilters = useMemo(() => ({
@@ -207,15 +210,10 @@ const PresetSync = ({
   const discoverFolders = async (category: string): Promise<string[]> => {
     try {
       // First try to check if an index file exists
-      const indexUrl = `https://${PRESET_S3_URL}/index.json`;
+      const indexUrl = `https://${presetS3Url}/index.json`;
 
       try {
-        const indexResponse = await fetch(indexUrl, {
-          // Add cache control for better performance
-          cache: 'force-cache',
-          next: { revalidate: 3600 } // Revalidate every hour
-        });
-
+        const indexResponse = await fetch(indexUrl);
         if (indexResponse.ok) {
           const indexData = await indexResponse.json();
 
@@ -227,18 +225,14 @@ const PresetSync = ({
           }
         }
       } catch (error) {
-        // Silently continue to fallback method
+        console.warn("No index file found, trying direct folder discovery");
       }
 
       // Fallback to querying the directory
-      const folderUrl = `https://${PRESET_S3_URL}/${category}/`;
+      const folderUrl = `https://${presetS3Url}/${category}/`;
 
       try {
-        const response = await fetch(folderUrl, {
-          cache: 'force-cache',
-          next: { revalidate: 3600 }
-        });
-
+        const response = await fetch(folderUrl);
         if (response.ok) {
           const text = await response.text();
           const folderMatches = text.match(/<Key>(.*?)\/<\/Key>/g);
@@ -250,11 +244,12 @@ const PresetSync = ({
           }
         }
       } catch (error) {
-        // Silently continue
+        console.warn("Error listing directory contents:", error);
       }
 
       return [];
     } catch (error) {
+      console.error("Error discovering folders:", error);
       return [];
     }
   };
@@ -295,13 +290,9 @@ const PresetSync = ({
       };
 
       // Try to fetch metadata
-      const metaUrl = `https://${PRESET_S3_URL}/${folderPath}meta.json`;
+      const metaUrl = `https://${presetS3Url}/${folderPath}meta.json`;
       try {
-        const metaResponse = await fetch(metaUrl, {
-          cache: 'force-cache',
-          next: { revalidate: 3600 }
-        });
-
+        const metaResponse = await fetch(metaUrl);
         if (metaResponse.ok) {
           const metaData = await metaResponse.json();
 
@@ -343,16 +334,17 @@ const PresetSync = ({
       }
 
       // Set image URLs directly without HEAD requests - UI will handle fallbacks
-      presetData.image = `https://${PRESET_S3_URL}/${folderPath}image.jpeg`;
+      // Try JPEG first as it's most common
+      presetData.image = `https://${presetS3Url}/${folderPath}image.jpeg`;
 
       // Set MP3 URLs directly - UI will handle fallbacks if they don't exist
       presetData.mp3s = {
-        before: `https://${PRESET_S3_URL}/${folderPath}mp3/before.mp3`,
-        after: `https://${PRESET_S3_URL}/${folderPath}mp3/after.mp3`
+        before: `https://${presetS3Url}/${folderPath}mp3/before.mp3`,
+        after: `https://${presetS3Url}/${folderPath}mp3/after.mp3`
       };
 
       // Set full preset URL directly
-      presetData.fullPreset = `https://${PRESET_S3_URL}/${folderPath}full_preset.zip`;
+      presetData.fullPreset = `https://${presetS3Url}/${folderPath}full_preset.zip`;
 
       // Add full preset ID to metadata
       presetData.metadata = presetData.metadata || {};

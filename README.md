@@ -68,44 +68,6 @@ When working with S3 data in this application:
 - Only make direct S3 requests for data that isn't already fetched
 - If you need to add new S3 data sources, add them to PresetSync.tsx when possible
 
-## Server-Side Rendering (SSR) Configuration
-
-For proper server-side rendering, especially when deploying to Vercel, follow these guidelines:
-
-1. **Environment Variables**: Ensure the following environment variables are set in your Vercel project:
-   ```
-   NEXT_PUBLIC_PRESET_S3_URL=preset.mixpreset.com
-   ```
-
-2. **S3 URL Access**: All components that access S3 URLs must use the following pattern for SSR compatibility:
-   ```javascript
-   const PRESET_S3_URL = typeof window !== 'undefined'
-     ? process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com"
-     : "preset.mixpreset.com";
-   ```
-
-3. **Image Domains**: In `next.config.ts`, ensure all possible S3 domains are included:
-   ```javascript
-   images: {
-     remotePatterns: [
-       {
-         protocol: 'https',
-         hostname: 'preset.mixpreset.com',
-       },
-       {
-         protocol: 'https',
-         hostname: 'mixpreset-preset.s3.amazonaws.com',
-       },
-       {
-         protocol: 'https',
-         hostname: 'mixpreset-preset.s3.us-east-1.amazonaws.com',
-       }
-     ],
-   }
-   ```
-
-This ensures that presets and images load correctly in both client-side and server-side rendering contexts.
-
 ## PayPal Integration
 
 The application integrates PayPal for payment processing using the `@paypal/react-paypal-js` library:

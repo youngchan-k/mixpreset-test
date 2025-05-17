@@ -7,10 +7,6 @@ import { hasAdminAccess } from '@/lib/permissions';
 import { getAllDownloadRecords, DownloadRecord } from '@/lib/downloadTracking';
 import HeroSection from '@/components/HeroSection';
 
-// Set the S3 custom URL with proper server-side rendering support
-const PRESET_S3_URL = typeof window !== 'undefined'
-  ? process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com"
-  : "preset.mixpreset.com";
 
 // Chart component for metrics visualization
 const MetricsChart = ({ data, label, color = 'blue' }: { data: number[], label: string, color?: string }) => {
@@ -111,6 +107,8 @@ interface PresetStats {
 
 export default function AdminContentPage() {
   const { currentUser } = useAuth();
+  // Add state for S3 URL
+  const [presetS3Url, setPresetS3Url] = useState("preset.mixpreset.com");
   const [downloads, setDownloads] = useState<DownloadRecord[]>([]);
   const [presetMetadata, setPresetMetadata] = useState<Map<string, PresetMetadata>>(new Map());
   const [loading, setLoading] = useState<boolean>(true);
@@ -124,12 +122,18 @@ export default function AdminContentPage() {
   const [monthlyGrowth, setMonthlyGrowth] = useState<number[]>([]);
   const [topPresets, setTopPresets] = useState<PresetStats[]>([]);
 
+  // Set up the S3 URL properly once we're client-side
+  useEffect(() => {
+    // This will only run on the client
+    setPresetS3Url(process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com");
+  }, []);
+
   // Initialize S3 client
   const s3Client = useMemo(() => ({
     getDirectUrl: (key: string): string => {
-      return `https://${PRESET_S3_URL}/${key}`;
+      return `https://${presetS3Url}/${key}`;
     }
-  }), []);
+  }), [presetS3Url]);
 
   // Check if user is admin and fetch data
   useEffect(() => {
@@ -166,13 +170,13 @@ export default function AdminContentPage() {
     }
 
     fetchData();
-  }, [currentUser]);
+  }, [currentUser, presetS3Url]);
 
   // Fetch preset metadata from S3
   const fetchPresetMetadata = async () => {
     try {
       // Categories in S3
-      const CATEGORIES = ['premium', 'vocal_chain', 'instrument'];
+      const CATEGORIES = ['vocal_fx', 'vocal_chain', 'instrument'];
       const metadataMap = new Map<string, PresetMetadata>();
       const categoryData: {label: string, count: number}[] = [];
 
@@ -185,13 +189,10 @@ export default function AdminContentPage() {
       // Track monthly preset creation
       const monthlyData = Array(6).fill(0); // Last 6 months
 
-      // Define the specific category order
-      const categoryOrder = ["premium", "vocal_chain", "instrument"];
-
       for (const category of CATEGORIES) {
         try {
           // List all preset folders in this category using direct S3 URL
-          const listUrl = `https://${PRESET_S3_URL}/?prefix=${category}/&delimiter=/`;
+          const listUrl = `https://${presetS3Url}/?prefix=${category}/&delimiter=/`;
           const response = await fetch(listUrl);
 
           if (!response.ok) {

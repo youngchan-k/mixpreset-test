@@ -16,11 +16,6 @@ import {
 import { getUserCreditBalance } from '@/lib/creditTracking';
 import { useRouter } from 'next/navigation';
 
-// Set the S3 custom URL with proper server-side rendering support
-const PRESET_S3_URL = typeof window !== 'undefined'
-  ? process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com"
-  : "preset.mixpreset.com";
-
 // Custom hook for download history
 const useDownloadHistory = (userId: string | undefined) => {
   const [downloadHistory, setDownloadHistory] = useState<DownloadRecord[]>([]);
@@ -88,7 +83,7 @@ const useDownloadHistory = (userId: string | undefined) => {
 };
 
 // Helper function to generate a direct URL for S3 objects
-const getDirectS3Url = (objectKey: string): string => {
+const getDirectS3Url = (objectKey: string, presetS3Url: string): string => {
   // Skip if the key is already a URL
   if (objectKey.startsWith('http')) {
     return objectKey;
@@ -96,12 +91,14 @@ const getDirectS3Url = (objectKey: string): string => {
 
   // Clean the object key (remove leading slash if present)
   const cleanedKey = objectKey.startsWith('/') ? objectKey.substring(1) : objectKey;
-  return `https://${PRESET_S3_URL}/${cleanedKey}`;
+  return `https://${presetS3Url}/${cleanedKey}`;
 };
 
 export default function DownloadsPage() {
   const { currentUser } = useAuth();
   const router = useRouter();
+  // Add state for S3 URL
+  const [presetS3Url, setPresetS3Url] = useState("preset.mixpreset.com");
 
   // Change variable name to make it clear this is only for initial loading
   const {
@@ -119,6 +116,12 @@ export default function DownloadsPage() {
 
   // Add loading state for redownload button
   const [redownloadingPresetId, setRedownloadingPresetId] = useState<string | null>(null);
+
+  // Set up the S3 URL properly once we're client-side
+  useEffect(() => {
+    // This will only run on the client
+    setPresetS3Url(process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com");
+  }, []);
 
   // Load user credit information
   useEffect(() => {
@@ -205,7 +208,7 @@ export default function DownloadsPage() {
         }
 
         // Use the custom URL for download
-        downloadUrl = `https://${PRESET_S3_URL}/${cleanKey}`;
+        downloadUrl = `https://${presetS3Url}/${cleanKey}`;
       } catch (error) {
         console.error("[processDownload] Error generating URL:", error);
         return;
@@ -283,7 +286,7 @@ export default function DownloadsPage() {
 
     // Split by underscore to see if first part is a known category
     const parts = urlSafeId.split('_');
-    const knownCategories = ["premium", "vocal_chain", "instrument"];
+    const knownCategories = ["vocal_chain", "vocal_fx", "instrument"];
 
     // Try to extract category and preset ID
     if (parts.length > 1 && knownCategories.includes(parts[0])) {
@@ -341,7 +344,7 @@ export default function DownloadsPage() {
   // Memoize category order
   const orderedCategories = useMemo(() => {
     // Define the specific category order
-    const categoryOrder = ["premium", "vocal_chain", "instrument"];
+    const categoryOrder = ["vocal_chain", "vocal_fx", "instrument"];
 
     // Get all categories from the grouped downloads
     const allCategories = Object.keys(groupedDownloads);
