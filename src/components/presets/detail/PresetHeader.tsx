@@ -149,37 +149,7 @@ const PresetHeader: React.FC<PresetHeaderProps> = ({
               {preset.title}
             </h1>
             <div className="flex flex-wrap items-center gap-2 mt-6 mb-2">
-              {/* Uploader Info */}
-              {preset.uploader && (
-                <div className="flex items-center bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/10">
-                  <div className="mr-2 h-6 w-6 overflow-hidden rounded-full border border-white/20 shadow-sm">
-                    {preset.uploader.avatar ? (
-                      <img
-                        src={preset.uploader.avatar}
-                        alt={preset.uploader.name}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="h-full w-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center">
-                        <span className="text-white text-xs font-bold">
-                          {preset.uploader.name.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center">
-                    <span className="text-white/90 text-sm">By <span className="font-medium">{preset.uploader.name}</span></span>
-                    <div className="flex items-center ml-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white/80 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span className="text-white/80 text-xs">Verified</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Credit indicator positioned next to uploader info */}
+              {/* Credit indicator positioned on the left */}
               <div className="flex items-center bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/10">
                 <div className="flex">
                   {Array.from({ length: credits }).map((_, i) => (
@@ -190,6 +160,18 @@ const PresetHeader: React.FC<PresetHeaderProps> = ({
                 </div>
                 <span className="text-white/90 text-sm ml-2">{credits} credit{credits !== 1 ? 's' : ''}</span>
               </div>
+
+              {/* Uploader Info on the right - no avatar, with email */}
+              {preset.uploader && (
+                <div className="flex items-center bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/10">
+                  <div className="flex items-center">
+                    <span className="text-white/90 text-sm">By <span className="font-medium">{preset.uploader.name}</span></span>
+                    {preset.uploader.email && (
+                      <span className="text-white/80 text-sm ml-2">({preset.uploader.email})</span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
