@@ -71,6 +71,7 @@ export interface PresetHeaderProps {
   isFavorite: boolean;
   setIsFavorite: (value: boolean) => void;
   onAuthRequired: (callback: () => void) => boolean;
+  onDownloadComplete?: () => void;
 }
 
 export interface PresetInfoProps {
@@ -88,6 +89,7 @@ export interface PresetDownloadProps {
   onAuthRequired: (callback: () => void) => boolean;
   presets: Preset[];
   onNavigate?: (page: string, param?: string | null) => void;
+  onDownloadComplete?: () => void;
 }
 
 export interface RelatedPresetsProps {

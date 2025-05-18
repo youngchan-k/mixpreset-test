@@ -142,120 +142,175 @@ export default function DownloadsPage() {
     }
   }, [currentUser]);
 
-  // Handle re-download with memoization
-  const handleRedownload = useCallback(async (downloadUrl?: string, presetId?: string, fileName?: string, presetName?: string, credits?: number) => {
-    // Show loading state
-    setRedownloadingPresetId(presetId || null);
-
-    try {
-      if (!downloadUrl) {
-        // If the URL is missing, try to get it from the original S3 path
-        if (presetId && currentUser?.uid) {
-          const mostRecentDownload = await getMostRecentDownload(currentUser.uid, presetId);
-
-          if (mostRecentDownload && mostRecentDownload.downloadUrl) {
-            downloadUrl = mostRecentDownload.downloadUrl;
-            presetName = mostRecentDownload.presetName;
-            credits = mostRecentDownload.credits;
-          } else {
-            // Instead of redirecting, show an error message or alert
-            console.error("[handleRedownload] Could not find download URL for preset");
-            setRedownloadingPresetId(null);
-            return;
-          }
-        } else {
-          console.error("[handleRedownload] Missing presetId or currentUser");
-          setRedownloadingPresetId(null);
-          return;
-        }
-
-        // If still no URL, show error but don't redirect
-        if (!downloadUrl) {
-          console.error("[handleRedownload] Failed to retrieve download URL");
-          setRedownloadingPresetId(null);
-          return;
-        }
-      }
-
-      // Skip credit check - just download the file directly
-      await processDownload(downloadUrl, fileName);
-    } catch (error) {
-      console.error("[handleRedownload] General error:", error);
-      // Don't redirect to presets page, just log the error
-    } finally {
-      setRedownloadingPresetId(null);
-    }
-  }, [currentUser, refreshHistorySilently]);
-
   // New function to process download
   const processDownload = async (downloadUrl?: string, fileName?: string) => {
     try {
       // Check if downloadUrl is defined
       if (!downloadUrl) {
         console.error("[processDownload] Download URL is undefined");
+        alert("Download URL is missing. Please try again or contact support.");
         return;
       }
+
+      // Log download attempt for debugging
+      console.log("[processDownload] Attempting to download:", { downloadUrl, fileName });
 
       // Generate a fresh direct URL
+      let finalDownloadUrl = downloadUrl;
       try {
-        // Remove any http or https protocol if present
-        let cleanKey = downloadUrl;
-        if (cleanKey.startsWith('http://') || cleanKey.startsWith('https://')) {
-          // Extract just the path portion if it's a full URL
-          const url = new URL(cleanKey);
-          const pathParts = url.pathname.split('/').filter(Boolean);
-          cleanKey = pathParts.join('/');
+        // Fix URL format based on what we have
+        if (downloadUrl.startsWith('http://') || downloadUrl.startsWith('https://')) {
+          // It's already a full URL, use it directly
+          finalDownloadUrl = downloadUrl;
+        } else {
+          // It's likely just a path, prepend the S3 domain
+          const cleanPath = downloadUrl.replace(/^\//, ''); // Remove leading slash if present
+          finalDownloadUrl = `https://${presetS3Url}/${cleanPath}`;
         }
 
-        // Use the custom URL for download
-        downloadUrl = `https://${presetS3Url}/${cleanKey}`;
-      } catch (error) {
-        console.error("[processDownload] Error generating URL:", error);
-        return;
-      }
+        console.log("[processDownload] Using URL:", finalDownloadUrl);
 
-      // Fetch the file data
-      try {
-        const response = await fetch(downloadUrl);
+        // Use just one approach at a time - try the download attribute first
+        try {
+          const link = document.createElement('a');
+          link.href = finalDownloadUrl;
+          link.setAttribute('download', fileName || 'preset-download.zip');
+          document.body.appendChild(link);
+          link.click();
 
-        if (!response.ok) {
-          throw new Error(`Failed to download: ${response.statusText}`);
+          // Clean up the link element after use
+          setTimeout(() => {
+            if (link.parentNode) {
+              document.body.removeChild(link);
+            }
+          }, 100);
+        } catch (e) {
+          console.error("Error with download approach 1:", e);
+
+          // Only if the first approach fails, try the new tab approach
+          if (confirm("There was an issue starting your download. Would you like to try opening in a new tab instead?")) {
+            window.open(finalDownloadUrl, '_blank');
+          }
         }
 
-        // Get the file content as a blob
-        const blob = await response.blob();
-
-        // Create a URL for the blob
-        const blobUrl = window.URL.createObjectURL(blob);
-
-        // Create a link element and trigger download
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = fileName || 'preset-download';
-        document.body.appendChild(link);
-        link.click();
-
-        // Clean up
-        window.URL.revokeObjectURL(blobUrl);
-        document.body.removeChild(link);
-
-        // We'll refresh the history after the download completes,
+                // We'll refresh the history after the download completes,
         // but we'll use the silent refresh to avoid UI flickering
         if (currentUser?.uid) {
-          // Refresh without showing the loading spinner
+          // Refresh without showing the loading spinner - use a longer delay
           setTimeout(() => {
             refreshHistorySilently();
-          }, 500);
+          }, 3000);
         }
-      } catch (fetchError) {
-        console.error("[processDownload] Fetch error:", fetchError);
-        // No redirection, just log the error
+      } catch (error) {
+        console.error("[processDownload] Error generating URL:", error);
+        // If there's an error parsing the URL, try a different approach
+        alert("There was an error processing your download. Opening file in a new tab.");
+        window.open(downloadUrl, '_blank');
       }
     } catch (error) {
       console.error("[processDownload] Error:", error);
-      // No redirection, just log the error
+      alert("There was an error processing your download. Please try again.");
     }
   };
+
+  // Handle re-download with memoization
+  const handleRedownload = useCallback(async (downloadUrl?: string, presetId?: string, fileName?: string, presetName?: string, credits?: number) => {
+    // Show loading state
+    setRedownloadingPresetId(presetId || null);
+
+    console.log("[handleRedownload] Starting download process:", { presetId, fileName });
+
+    try {
+      // First check if we have a direct URL to work with
+      if (downloadUrl) {
+        console.log("[handleRedownload] Using provided URL:", downloadUrl);
+        await processDownload(downloadUrl, fileName);
+        setRedownloadingPresetId(null);
+        return;
+      }
+
+      console.log("[handleRedownload] No direct URL, attempting to find download information");
+
+      // If the URL is missing, try to get it from the original S3 path
+      if (presetId && currentUser?.uid) {
+        try {
+          const mostRecentDownload = await getMostRecentDownload(currentUser.uid, presetId);
+          console.log("[handleRedownload] Found recent download:", mostRecentDownload);
+
+          if (mostRecentDownload && mostRecentDownload.downloadUrl) {
+            // Use the download URL from the history
+            downloadUrl = mostRecentDownload.downloadUrl;
+
+            // All preset files use the standard filename
+            fileName = "full_preset.zip";
+
+            // Try downloading with this URL
+            await processDownload(downloadUrl, fileName);
+            setRedownloadingPresetId(null);
+            return;
+          }
+        } catch (findError) {
+          console.error("[handleRedownload] Error finding recent download:", findError);
+        }
+
+        // If we get here but still have a presetId, try to construct a URL directly
+        try {
+          console.log("[handleRedownload] Constructing URL from preset ID:", presetId);
+
+          // First check if we have a category directly from the download record
+          let category = "premium"; // Default only as last resort
+
+          // Find this preset in all downloads to get its category
+          if (currentUser?.uid) {
+            try {
+              const allDownloads = Object.values(groupedDownloads).flat();
+              const matchingDownload = allDownloads.find(d => d.presetId === presetId);
+
+              // If we found a matching download with category info, use that
+              if (matchingDownload && matchingDownload.presetCategory) {
+                // Make sure to use underscore format for any categories (like "vocal_chain" not "Vocal Chain")
+                category = matchingDownload.presetCategory.replace(/\s+/g, '_').toLowerCase();
+                console.log("[handleRedownload] Found category from download record:", category);
+              } else {
+                // Fall back to extracting from the preset ID if needed
+                const parts = presetId.split('_');
+                const knownCategories = ["premium", "vocal_chain", "instrument"];
+
+                // Check if the preset ID starts with a known category
+                if (parts.length > 0 && knownCategories.includes(parts[0])) {
+                  category = parts[0];
+                  console.log("[handleRedownload] Extracted category from preset ID:", category);
+                }
+              }
+            } catch (e) {
+              console.error("[handleRedownload] Error finding category:", e);
+            }
+          }
+
+          // Construct a direct URL to the S3 bucket - preserve spaces in the preset ID
+          downloadUrl = `${category}/${presetId}/full_preset.zip`;
+          console.log("[handleRedownload] Constructed URL path:", downloadUrl);
+
+          // Try downloading with this constructed URL
+          await processDownload(downloadUrl, "full_preset.zip");
+          setRedownloadingPresetId(null);
+          return;
+        } catch (constructError) {
+          console.error("[handleRedownload] Error constructing URL:", constructError);
+        }
+      }
+
+      // If we get here, we couldn't find or construct a URL
+      console.error("[handleRedownload] Failed to retrieve download URL");
+      alert("Could not find the download file. Please contact support.");
+
+    } catch (error) {
+      console.error("[handleRedownload] General error:", error);
+      alert("An error occurred while trying to download. Please try again.");
+    } finally {
+      setRedownloadingPresetId(null);
+    }
+  }, [currentUser, processDownload]);
 
   // Handle navigation to preset detail page - memoized
   const navigateToPresetDetail = useCallback((presetId: string) => {
@@ -284,21 +339,36 @@ export default function DownloadsPage() {
     // For direct preset IDs, just use the ID without modification
     const urlSafeId = presetId.replace(/\s+/g, '_');
 
-    // Split by underscore to see if first part is a known category
-    const parts = urlSafeId.split('_');
-    const knownCategories = ["vocal_chain", "vocal_fx", "instrument"];
+    // First try to find the category in the download records
+    let category = null;
+    const allDownloads = Object.values(groupedDownloads).flat();
+    const matchingDownload = allDownloads.find(d => d.presetId === presetId);
 
-    // Try to extract category and preset ID
-    if (parts.length > 1 && knownCategories.includes(parts[0])) {
-      // Extract category and preset ID
-      const category = parts[0];
-      const presetIdPart = parts.slice(1).join('_');
+        if (matchingDownload && matchingDownload.presetCategory) {
+      // Use the category from the download record, ensuring proper underscore format
+      category = matchingDownload.presetCategory.replace(/\s+/g, '_').toLowerCase();
+      console.log(`[navigateToPresetDetail] Using category from download record: ${category}`);
 
       // Use the new URL format
-      router.push(`/presets/${category}/${presetIdPart}`);
+      router.push(`/presets/${category}/${urlSafeId}`);
     } else {
-      // If we can't determine category, just use the premium category as default
-      router.push(`/presets/premium/${urlSafeId}`);
+      // Fall back to extracting from the preset ID
+      const parts = urlSafeId.split('_');
+      const knownCategories = ["premium", "vocal_chain", "instrument"];
+
+      // Try to extract category and preset ID
+      if (parts.length > 1 && knownCategories.includes(parts[0])) {
+        // Extract category and preset ID
+        category = parts[0];
+        const presetIdPart = parts.slice(1).join('_');
+
+        // Use the new URL format
+        router.push(`/presets/${category}/${presetIdPart}`);
+      } else {
+        // If we can't determine category, just use the premium category as default
+        console.log(`[navigateToPresetDetail] Could not determine category, using default`);
+        router.push(`/presets/premium/${urlSafeId}`);
+      }
     }
   }, [router, groupedDownloads]);
 
@@ -311,16 +381,6 @@ export default function DownloadsPage() {
 
     // Format the basic name first
     const displayName = formatPresetNameForDisplay(download.presetName);
-
-    // Check if this is a full preset by checking for _full suffix
-    if (download.presetId.endsWith('_full')) {
-      // Extract the base name (everything before the last underscore)
-      const lastUnderscoreIndex = download.presetId.lastIndexOf('_');
-      if (lastUnderscoreIndex > 0) {
-        const baseName = download.presetId.substring(0, lastUnderscoreIndex);
-        return formatPresetNameForDisplay(baseName);
-      }
-    }
 
     return displayName;
   }, []);
@@ -344,7 +404,7 @@ export default function DownloadsPage() {
   // Memoize category order
   const orderedCategories = useMemo(() => {
     // Define the specific category order
-    const categoryOrder = ["vocal_chain", "vocal_fx", "instrument"];
+    const categoryOrder = ["premium", "vocal_chain", "instrument"];
 
     // Get all categories from the grouped downloads
     const allCategories = Object.keys(groupedDownloads);
@@ -442,14 +502,13 @@ export default function DownloadsPage() {
                           </h3>
 
                           <div className="overflow-x-auto">
-                            <table className="w-full">
+                            <table className="w-full table-fixed">
                               <thead className="bg-gray-50">
                                 <tr>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preset Name</th>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Filename</th>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Credits</th>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">Free Re-download</th>
-                                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">Preset Name</th>
+                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">Credits</th>
+                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">Free Re-download</th>
+                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">Actions</th>
                                 </tr>
                               </thead>
                               <tbody className="bg-white divide-y divide-gray-200">
@@ -466,14 +525,11 @@ export default function DownloadsPage() {
                                           {getDisplayPresetName(download)}
                                         </button>
                                       </td>
-                                      <td className="px-6 py-4 whitespace-nowrap truncate max-w-[150px]">
-                                        {download.fileName}
-                                      </td>
                                       <td className="px-6 py-4 whitespace-nowrap">
                                         {download.credits ?? 'Free'}
                                       </td>
                                       <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                        <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
                                           formatRemainingRedownloadTime(download.downloadTime) === "Expired"
                                             ? "bg-red-100 text-red-800"
                                             : "bg-green-100 text-green-800"
@@ -483,22 +539,22 @@ export default function DownloadsPage() {
                                       </td>
                                       <td className="px-6 py-4 whitespace-nowrap text-center">
                                         <button
-                                          onClick={() => handleRedownload(download.downloadUrl, download.presetId, download.fileName, download.presetName, download.credits)}
-                                          className="inline-flex items-center px-3 py-1 border border-purple-600 text-sm font-medium rounded-md text-purple-600 bg-white hover:bg-purple-50 focus:outline-none"
+                                          onClick={() => handleRedownload(download.downloadUrl, download.presetId, undefined, download.presetName, download.credits)}
+                                          className="inline-flex items-center justify-center w-full px-3 py-1 border border-purple-600 text-sm font-medium rounded-md text-purple-600 bg-white hover:bg-purple-50 focus:outline-none"
                                           aria-label={`Re-download ${download.presetName}`}
                                           disabled={redownloadingPresetId === download.presetId}
                                         >
                                           {redownloadingPresetId === download.presetId ? (
                                             <>
                                               <div className="animate-spin h-4 w-4 mr-1 border-b-2 border-purple-600 rounded-full"></div>
-                                              Downloading...
+                                              <span className="whitespace-nowrap">Downloading...</span>
                                             </>
                                           ) : (
                                             <>
-                                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
                                               </svg>
-                                              Download
+                                              <span className="whitespace-nowrap">Download</span>
                                             </>
                                           )}
                                         </button>

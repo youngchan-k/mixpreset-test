@@ -223,7 +223,15 @@ export async function recordDownload(
 
     // Validate preset category - ensure it's one of the allowed categories
     let validatedCategory = presetCategory;
-    if (!['Premium', 'Vocal Chain', 'Instrument'].includes(presetCategory)) {
+
+    // Convert underscored category to space-separated with capitalization to match expected format
+    if (presetCategory === 'vocal_chain') {
+      validatedCategory = 'Vocal Chain';
+    } else if (presetCategory === 'premium') {
+      validatedCategory = 'Premium';
+    } else if (presetCategory === 'instrument') {
+      validatedCategory = 'Instrument';
+    } else if (!['Premium', 'Vocal Chain', 'Instrument'].includes(presetCategory)) {
       // Default to Premium if the category isn't recognized
       validatedCategory = 'Premium';
     }

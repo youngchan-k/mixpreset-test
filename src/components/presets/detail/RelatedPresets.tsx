@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import Image from 'next/image';
 import { RelatedPresetsProps, Preset } from './types';
 
 const RelatedPresets: React.FC<RelatedPresetsProps> = ({
@@ -135,11 +136,16 @@ const RelatedPresets: React.FC<RelatedPresetsProps> = ({
         >
           <div className="rounded-lg overflow-hidden bg-gray-100 aspect-[4/3] mb-3 transition-all group-hover:shadow-md">
             {preset.image ? (
-              <img
-                src={preset.image}
-                alt={preset.title}
-                className="w-full h-full object-cover transition-transform group-hover:scale-105"
-              />
+              <div className="relative w-full h-full">
+                <Image
+                  src={preset.image}
+                  alt={preset.title}
+                  className="transition-transform group-hover:scale-105"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 25vw"
+                  style={{objectFit: 'cover'}}
+                />
+              </div>
             ) : (
               <div className="w-full h-full bg-gradient-to-r from-purple-800 to-purple-600 flex items-center justify-center">
                 <span className="text-lg text-white opacity-50">{preset.category.replace('_', ' ')}</span>

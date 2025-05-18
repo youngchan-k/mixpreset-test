@@ -176,7 +176,7 @@ export default function AdminContentPage() {
   const fetchPresetMetadata = async () => {
     try {
       // Categories in S3
-      const CATEGORIES = ['vocal_fx', 'vocal_chain', 'instrument'];
+      const CATEGORIES = ['premium', 'vocal_chain', 'instrument'];
       const metadataMap = new Map<string, PresetMetadata>();
       const categoryData: {label: string, count: number}[] = [];
 

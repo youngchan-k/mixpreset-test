@@ -1,20 +1,239 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { addToFavorites, removeFromFavorites, isPresetFavorited, syncFavoritesToLocalStorage } from '@/lib/favoritesTracking';
 import { PresetHeaderProps } from './types';
+import { isFreeRedownloadEligible, formatRemainingRedownloadTime, getMostRecentDownload, recordDownload } from '@/lib/downloadTracking';
+import { getUserCreditBalance } from '@/lib/creditTracking';
+import { deductUserCredits } from '@/lib/paymentTracking';
+import DownloadConfirmModal from '../../modals/DownloadConfirmModal';
+import InsufficientCreditsModal from '../../modals/InsufficientCreditsModal';
 
 const PresetHeader: React.FC<PresetHeaderProps> = ({
   preset,
   isFavorite,
   setIsFavorite,
-  onAuthRequired
+  onAuthRequired,
+  onDownloadComplete
 }) => {
   const { currentUser } = useAuth();
 
+  // Download related states
+  const [availableCredits, setAvailableCredits] = useState<number>(0);
+  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
+  const [showInsufficientCreditsModal, setShowInsufficientCreditsModal] = useState<boolean>(false);
+  const [processingDownload, setProcessingDownload] = useState<boolean>(false);
+  const [freeRedownload, setFreeRedownload] = useState<boolean>(false);
+  const [remainingRedownloadTime, setRemainingRedownloadTime] = useState<string>("");
+  const [lastDownloadTime, setLastDownloadTime] = useState<number | null>(null);
+
   // Determine credits display
   const credits = preset.credit_cost || 1;
+
+  // Check if current preset was previously downloaded and still eligible for free redownload
+  useEffect(() => {
+    const checkFreeDownloadStatus = async () => {
+      if (!currentUser || !preset) return;
+
+      try {
+        // Check if it's eligible for free redownload
+        const isFreeDownload = await isFreeRedownloadEligible(
+          currentUser.uid,
+          preset.id
+        );
+        setFreeRedownload(isFreeDownload);
+
+        // Get the most recent download to calculate remaining time
+        const mostRecentDownload = await getMostRecentDownload(
+          currentUser.uid,
+          preset.id
+        );
+
+        if (mostRecentDownload) {
+          setLastDownloadTime(mostRecentDownload.downloadTime);
+          setRemainingRedownloadTime(formatRemainingRedownloadTime(mostRecentDownload.downloadTime));
+        } else {
+          setLastDownloadTime(null);
+          setRemainingRedownloadTime("");
+        }
+      } catch (error) {
+        console.error("Error checking download status:", error);
+      }
+    };
+
+    if (currentUser && preset) {
+      checkFreeDownloadStatus();
+    }
+  }, [currentUser, preset]);
+
+  // Update remaining time periodically
+  useEffect(() => {
+    if (!lastDownloadTime) return;
+
+    const interval = setInterval(() => {
+      setRemainingRedownloadTime(formatRemainingRedownloadTime(lastDownloadTime));
+      // Check if redownload period has expired
+      const now = Date.now();
+      const timeDiff = now - lastDownloadTime;
+      const FREE_REDOWNLOAD_WINDOW_MS = 3 * 24 * 60 * 60 * 1000; // 3 days in milliseconds
+      setFreeRedownload(timeDiff <= FREE_REDOWNLOAD_WINDOW_MS);
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, [lastDownloadTime]);
+
+  // Load user credits when component mounts or user changes
+  useEffect(() => {
+    const loadUserCredits = async () => {
+      if (!currentUser) {
+        setAvailableCredits(0);
+        return;
+      }
+
+      try {
+        const creditBalance = await getUserCreditBalance(currentUser.uid);
+        setAvailableCredits(creditBalance.available);
+      } catch (error) {
+        console.error("Error fetching user credits:", error);
+        setAvailableCredits(0);
+      }
+    };
+
+    loadUserCredits();
+  }, [currentUser]);
+
+  // Check if the user has enough credits to download this preset
+  const hasEnoughCredits = freeRedownload || availableCredits >= (preset.credit_cost || 1);
+
+  // Handle download button click
+  const handleDownload = () => {
+    onAuthRequired(() => {
+      if (!currentUser) {
+        return false;
+      }
+
+      // Refresh the credit balance before showing the modal
+      const refreshCredits = async () => {
+        if (currentUser) {
+          try {
+            const creditBalance = await getUserCreditBalance(currentUser.uid);
+            setAvailableCredits(creditBalance.available);
+          } catch (error) {
+            console.error("Error fetching user credits:", error);
+          }
+        }
+      };
+
+      // Check credits and show appropriate modal
+      if (hasEnoughCredits || freeRedownload) {
+        // Refresh credits first, then show the modal
+        refreshCredits().then(() => {
+          setShowConfirmModal(true);
+        });
+      } else {
+        // Refresh credits first, then show the modal
+        refreshCredits().then(() => {
+          setShowInsufficientCreditsModal(true);
+        });
+      }
+
+      return true;
+    });
+  };
+
+  // Process the download
+  const processDownload = async () => {
+    if (!currentUser || processingDownload) return;
+
+    try {
+      setProcessingDownload(true);
+
+      // Helper function to trigger download
+      const triggerDownload = (url: string, filename: string) => {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      };
+
+      // Determine what files to download
+      if (preset.fullPreset) {
+        const filenameParts = preset.fullPreset.split('/');
+        const filename = filenameParts[filenameParts.length - 1];
+        triggerDownload(preset.fullPreset, filename || `${preset.title.replace(/\s+/g, '_')}.zip`);
+      } else {
+        // Fallback to constructing URL
+        const s3Key = `${preset.category}/${preset.id.replace(/\s+/g, '_')}/full_preset.zip`;
+        const url = `https://${process.env.NEXT_PUBLIC_PRESET_S3_URL || "preset.mixpreset.com"}/${s3Key}`;
+        triggerDownload(url, `${preset.title.replace(/\s+/g, '_')}.zip`);
+      }
+
+      // Record the download in DynamoDB
+      await recordDownload(
+        currentUser.uid,
+        preset.id,
+        preset.title,
+        preset.category,
+        undefined,  // downloadUrl
+        currentUser.email || 'anonymous@user.com',
+        undefined,  // fileName
+        undefined,  // expiryTime
+        freeRedownload ? 0 : preset.credit_cost || 1  // Use preset credit_cost or default to 1
+      );
+
+      // If it's not a free redownload, deduct credits
+      if (!freeRedownload) {
+        await deductUserCredits(
+          currentUser.uid,
+          currentUser.email || 'anonymous@user.com',
+          preset.credit_cost || 1,
+          `Download of ${preset.title} (${preset.id})`
+        );
+
+        // Update the UI with new credit balance
+        const newBalance = await getUserCreditBalance(currentUser.uid);
+        setAvailableCredits(newBalance.available);
+      }
+
+      // Update the free redownload status and time
+      setFreeRedownload(true);
+      setLastDownloadTime(Date.now());
+      setRemainingRedownloadTime(formatRemainingRedownloadTime(Date.now()));
+
+      // Call the onDownloadComplete callback to refresh download history
+      if (onDownloadComplete) {
+        onDownloadComplete();
+      }
+
+    } catch (error) {
+      console.error("Error processing download:", error);
+      alert("There was an error processing your download. Please try again.");
+    } finally {
+      setProcessingDownload(false);
+      setShowConfirmModal(false);
+    }
+  };
+
+  // Handle cancel of confirmation modal
+  const handleCancelDownload = () => {
+    setShowConfirmModal(false);
+  };
+
+  // Handle closing the insufficient credits modal
+  const handleCloseInsufficientCreditsModal = () => {
+    setShowInsufficientCreditsModal(false);
+  };
+
+  // Handle navigation to pricing page
+  const handleNavigateToPricing = () => {
+    window.location.href = '/profile/credits';
+  };
+
+  // Check if the user has sufficient credits
+  const isDownloadable = freeRedownload || availableCredits >= (preset.credit_cost || 1);
 
   // Check if the preset is in favorites when it loads
   useEffect(() => {
@@ -179,29 +398,29 @@ const PresetHeader: React.FC<PresetHeaderProps> = ({
           <div className="flex flex-wrap items-center gap-3 mt-2">
             {/* Download Button */}
             <button
-              onClick={() => onAuthRequired(() => {
-                if (!currentUser) return false;
-                if (preset) {
-                  // Trigger the download functionality by showing the download section
-                  const downloadSection = document.querySelector('[data-download-section]');
-                  if (downloadSection) {
-                    downloadSection.scrollIntoView({ behavior: 'smooth' });
-
-                    // Find and click the download button
-                    const downloadButton = downloadSection.querySelector('button');
-                    if (downloadButton) {
-                      downloadButton.click();
-                    }
-                  }
-                }
-                return true;
-              })}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-white text-gray-800 rounded-lg transition-all shadow-xl hover:shadow-2xl transform hover:translate-y-[-1px] border border-gray-100 hover:bg-gray-50"
+              onClick={handleDownload}
+              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-all shadow-xl hover:shadow-2xl transform hover:translate-y-[-1px] border ${
+                freeRedownload
+                  ? "bg-green-600 text-white border-green-500 hover:bg-green-700"
+                  : "bg-white text-gray-800 border-gray-100 hover:bg-gray-50"
+              }`}
+              disabled={processingDownload}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              <span className="text-sm font-medium">Download Now</span>
+              {processingDownload ? (
+                <>
+                  <div className="animate-spin h-4 w-4 mr-1 border-b-2 border-current rounded-full"></div>
+                  <span className="text-sm font-medium">Downloading...</span>
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  <span className="text-sm font-medium">
+                    {freeRedownload ? "Download Again (Free)" : "Download Now"}
+                  </span>
+                </>
+              )}
             </button>
 
             {/* Favorite Button */}
@@ -232,6 +451,27 @@ const PresetHeader: React.FC<PresetHeaderProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <DownloadConfirmModal
+        isOpen={showConfirmModal}
+        onConfirm={processDownload}
+        onClose={handleCancelDownload}
+        creditsRequired={freeRedownload ? 0 : (preset.credit_cost || 1)}
+        availableCredits={availableCredits}
+        presetTitle={preset.title}
+        onNavigateToPricing={handleNavigateToPricing}
+        freeRedownloadCount={freeRedownload ? 1 : 0}
+      />
+
+      <InsufficientCreditsModal
+        isOpen={showInsufficientCreditsModal}
+        onClose={handleCloseInsufficientCreditsModal}
+        onNavigateToPricing={handleNavigateToPricing}
+        presetTitle={preset.title}
+        creditsRequired={preset.credit_cost || 1}
+        availableCredits={availableCredits}
+      />
 
       {/* Minimal wave shape divider */}
       <div className="absolute bottom-0 left-0 right-0 overflow-hidden">

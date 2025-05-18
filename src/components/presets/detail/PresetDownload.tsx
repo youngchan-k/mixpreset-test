@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { recordDownload, isFreeRedownloadEligible } from '@/lib/downloadTracking';
+import { recordDownload, isFreeRedownloadEligible, formatRemainingRedownloadTime, getMostRecentDownload } from '@/lib/downloadTracking';
 import { deductUserCredits } from '@/lib/paymentTracking';
 import { getUserCreditBalance } from '@/lib/creditTracking';
 import { PresetDownloadProps, DownloadItem } from './types';
@@ -15,7 +15,8 @@ const PresetDownload: React.FC<PresetDownloadProps> = ({
   downloadHistory,
   onAuthRequired,
   presets,
-  onNavigate
+  onNavigate,
+  onDownloadComplete
 }) => {
   const { currentUser } = useAuth();
   // Add state for S3 URL
@@ -25,6 +26,8 @@ const PresetDownload: React.FC<PresetDownloadProps> = ({
   const [showInsufficientCreditsModal, setShowInsufficientCreditsModal] = useState<boolean>(false);
   const [processingDownload, setProcessingDownload] = useState<boolean>(false);
   const [freeRedownload, setFreeRedownload] = useState<boolean>(false);
+  const [remainingRedownloadTime, setRemainingRedownloadTime] = useState<string>("");
+  const [lastDownloadTime, setLastDownloadTime] = useState<number | null>(null);
 
   // Set up the S3 URL properly once we're client-side
   useEffect(() => {
@@ -37,18 +40,52 @@ const PresetDownload: React.FC<PresetDownloadProps> = ({
     const checkFreeDownloadStatus = async () => {
       if (!currentUser || !preset) return;
 
-      const isFreeDownload = await isFreeRedownloadEligible(
-        currentUser.uid,
-        preset.id
-      );
+      try {
+        // Check if it's eligible for free redownload
+        const isFreeDownload = await isFreeRedownloadEligible(
+          currentUser.uid,
+          preset.id
+        );
+        setFreeRedownload(isFreeDownload);
 
-      setFreeRedownload(isFreeDownload);
+        // Get the most recent download to calculate remaining time
+        const mostRecentDownload = await getMostRecentDownload(
+          currentUser.uid,
+          preset.id
+        );
+
+        if (mostRecentDownload) {
+          setLastDownloadTime(mostRecentDownload.downloadTime);
+          setRemainingRedownloadTime(formatRemainingRedownloadTime(mostRecentDownload.downloadTime));
+        } else {
+          setLastDownloadTime(null);
+          setRemainingRedownloadTime("");
+        }
+      } catch (error) {
+        console.error("Error checking download status:", error);
+      }
     };
 
     if (currentUser && preset) {
       checkFreeDownloadStatus();
     }
   }, [currentUser, preset, downloadHistory]);
+
+  // Update remaining time periodically
+  useEffect(() => {
+    if (!lastDownloadTime) return;
+
+    const interval = setInterval(() => {
+      setRemainingRedownloadTime(formatRemainingRedownloadTime(lastDownloadTime));
+      // Check if redownload period has expired
+      const now = Date.now();
+      const timeDiff = now - lastDownloadTime;
+      const FREE_REDOWNLOAD_WINDOW_MS = 3 * 24 * 60 * 60 * 1000; // 3 days in milliseconds
+      setFreeRedownload(timeDiff <= FREE_REDOWNLOAD_WINDOW_MS);
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, [lastDownloadTime]);
 
   // Load user credits when component mounts or user changes
   useEffect(() => {
@@ -197,14 +234,17 @@ const PresetDownload: React.FC<PresetDownloadProps> = ({
       }
 
       // If we got this far, the download was successful
-      // Record download in DynamoDB
+      // Pass the correct preset.credit_cost to recordDownload
       await recordDownload(
         currentUser.uid,
         preset.id,
         preset.title,
         preset.category,
         undefined,  // downloadUrl
-        currentUser.email || 'anonymous@user.com'
+        currentUser.email || 'anonymous@user.com',
+        undefined,  // fileName
+        undefined,  // expiryTime
+        freeRedownload ? 0 : preset.credit_cost || 1  // Use preset credit_cost or default to 1
       );
 
       // If it's not a free redownload, deduct credits
@@ -221,8 +261,15 @@ const PresetDownload: React.FC<PresetDownloadProps> = ({
         setAvailableCredits(newBalance.available);
       }
 
-      // Update the free redownload status
+      // Update the free redownload status and time
       setFreeRedownload(true);
+      setLastDownloadTime(Date.now());
+      setRemainingRedownloadTime(formatRemainingRedownloadTime(Date.now()));
+
+      // Call the onDownloadComplete callback to refresh the download history
+      if (onDownloadComplete) {
+        onDownloadComplete();
+      }
 
     } catch (error) {
       console.error("Error processing download:", error);
@@ -273,6 +320,26 @@ const PresetDownload: React.FC<PresetDownloadProps> = ({
         creditsRequired={preset.credit_cost || 1}
         availableCredits={availableCredits}
       />
+
+      {/* Download button */}
+      <div>
+        <button
+          onClick={handleDownload}
+          className={`px-5 py-2.5 rounded-lg font-medium transition-colors ${
+            freeRedownload
+              ? "bg-green-600 hover:bg-green-700 text-white"
+              : "bg-purple-600 hover:bg-purple-700 text-white"
+          }`}
+        >
+          {freeRedownload ? "Download Again (Free)" : `Download (${preset.credit_cost || 1} credit${preset.credit_cost !== 1 ? 's' : ''})`}
+        </button>
+
+        {freeRedownload && remainingRedownloadTime && (
+          <div className="mt-2 text-sm text-green-700">
+            Free re-download available: {remainingRedownloadTime}
+          </div>
+        )}
+      </div>
     </>
   );
 };

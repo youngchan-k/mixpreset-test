@@ -1141,23 +1141,40 @@ function PresetsPage({ onNavigate, onAuthRequired, initialTab = 'premium' }: Pre
                                       } else if (currentSrc.endsWith('jpg')) {
                                         target.src = `${baseUrl.substring(0, baseUrl.length)}.webp`;
                                       } else {
-                                        // If all formats fail, show fallback
-                                        const imgElement = target.parentElement?.parentElement;
-                                        if (imgElement) {
-                                          imgElement.classList.add('hidden');
-                                          const fallbackElement = imgElement.nextElementSibling;
-                                          if (fallbackElement) fallbackElement.classList.remove('hidden');
+                                        // If all formats fail, replace with gradient background
+                                        const imgContainer = target.parentElement?.parentElement;
+                                        if (imgContainer) {
+                                          target.style.display = 'none';
+                                          imgContainer.style.background = "linear-gradient(to right, #7e3af2, #6366f1)";
+                                          imgContainer.style.display = "flex";
+                                          imgContainer.style.alignItems = "center";
+                                          imgContainer.style.justifyContent = "center";
+
+                                          const placeholder = document.createElement('div');
+                                          placeholder.className = "text-center";
+                                          placeholder.innerHTML = `
+                                            <div class="text-2xl text-white opacity-70">${preset.category === 'vocal_chain' ? 'Vocal Chain' : preset.category.charAt(0).toUpperCase() + preset.category.slice(1)}</div>
+                                            <div class="text-sm text-white/70 mt-2">${
+                                              Array.isArray(preset.filters.genre) ? preset.filters.genre[0] : preset.filters.genre
+                                            }</div>
+                                          `;
+                                          imgContainer.appendChild(placeholder);
                                         }
                                       }
                                     }}
                                   />
                                 </div>
-                                <div className="block md:hidden">
-                                  <img
+                                <div className="relative w-full h-full block md:hidden">
+                                  <Image
                                     src={preset.image}
                                     alt={preset.title}
-                                    className="w-full h-48 object-cover transition-transform duration-700 group-hover:scale-110"
+                                    className="transition-transform duration-700 group-hover:scale-110"
+                                    fill
+                                    sizes="100vw"
                                     loading="eager"
+                                    placeholder="blur"
+                                    blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNjE0MGI1IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjwvc3ZnPg=="
+                                    style={{objectFit: 'cover'}}
                                     onError={(e) => {
                                       // Try alternative image formats if JPEG fails
                                       const target = e.currentTarget;
@@ -1174,20 +1191,24 @@ function PresetsPage({ onNavigate, onAuthRequired, initialTab = 'premium' }: Pre
                                       } else if (currentSrc.endsWith('jpg')) {
                                         target.src = `${baseUrl.substring(0, baseUrl.length)}.webp`;
                                       } else {
-                                        // If all formats fail, switch to fallback gradient
-                                        target.style.display = 'none';
-                                        const parent = target.parentElement;
-                                        if (parent) {
-                                          // Create gradient div
-                                          const fallback = document.createElement('div');
-                                          fallback.className = 'w-full h-48 bg-gradient-to-r from-purple-600 to-indigo-600 flex flex-col items-center justify-center';
-                                          fallback.innerHTML = `
-                                            <span class="text-2xl text-white opacity-70">${preset.category.replace('_', ' ')}</span>
-                                            <span class="text-sm text-purple-200 mt-2">${Array.isArray(preset.filters.genre)
-                                              ? preset.filters.genre[0]
-                                              : preset.filters.genre}</span>
+                                        // If all formats fail, replace with gradient background
+                                        const imgContainer = target.parentElement?.parentElement;
+                                        if (imgContainer) {
+                                          target.style.display = 'none';
+                                          imgContainer.style.background = "linear-gradient(to right, #7e3af2, #6366f1)";
+                                          imgContainer.style.display = "flex";
+                                          imgContainer.style.alignItems = "center";
+                                          imgContainer.style.justifyContent = "center";
+
+                                          const placeholder = document.createElement('div');
+                                          placeholder.className = "text-center";
+                                          placeholder.innerHTML = `
+                                            <div class="text-2xl text-white opacity-70">${preset.category === 'vocal_chain' ? 'Vocal Chain' : preset.category.charAt(0).toUpperCase() + preset.category.slice(1)}</div>
+                                            <div class="text-sm text-white/70 mt-2">${
+                                              Array.isArray(preset.filters.genre) ? preset.filters.genre[0] : preset.filters.genre
+                                            }</div>
                                           `;
-                                          parent.appendChild(fallback);
+                                          imgContainer.appendChild(placeholder);
                                         }
                                       }
                                     }}

@@ -78,7 +78,7 @@ function PresetDetail({ onNavigate, presetId, onAuthRequired }: PresetDetailProp
     setLoadingRetryCount(prev => prev + 1);
   };
 
-  // Fetch user's download history when the component mounts
+  // Fetch user's download history when the component mounts or when presetId changes
   useEffect(() => {
     const fetchDownloadHistory = async () => {
       if (!currentUser) {
@@ -97,7 +97,22 @@ function PresetDetail({ onNavigate, presetId, onAuthRequired }: PresetDetailProp
     };
 
     fetchDownloadHistory();
-  }, [currentUser]);
+  }, [currentUser, presetId]);
+
+  // Function to refresh download history (can be called after successful download)
+  const refreshDownloadHistory = async () => {
+    if (!currentUser) return;
+
+    try {
+      setIsLoadingHistory(true);
+      const history = await getUserDownloadHistory(currentUser.uid);
+      setDownloadHistory(history);
+    } catch (error) {
+      console.error("Error refreshing download history:", error);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
 
   // Simplify the preset search logic
   const findPresetById = (presets: Preset[], searchId: string | null): Preset | null => {
@@ -312,6 +327,7 @@ function PresetDetail({ onNavigate, presetId, onAuthRequired }: PresetDetailProp
             isFavorite={isFavorite}
             setIsFavorite={setIsFavorite}
             onAuthRequired={onAuthRequired}
+            onDownloadComplete={refreshDownloadHistory}
           />
 
           <div className="container mx-auto px-6 py-2">
@@ -502,13 +518,6 @@ function PresetDetail({ onNavigate, presetId, onAuthRequired }: PresetDetailProp
                       </div>
                     </div>
                   </div>
-                </div>
-
-                {/* Rest of the content */}
-                <div className="flex flex-col gap-6">
-                  {/* Remove the stand-alone Audio Preview section */}
-
-                  {/* Full Download Section - Removed */}
                 </div>
               </div>
 
