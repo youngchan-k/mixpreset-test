@@ -65,17 +65,35 @@ export default function Navbar({ isAuthenticated: propIsAuthenticated, onLogout:
                     pathname?.includes('/signup') ||
                     pathname?.includes('/forgot-password');
 
+  // Improved scroll detection logic
   useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 10) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
+    const checkScroll = () => {
+      // Only run on the client side
+      if (typeof window !== 'undefined') {
+        // Set initial scroll state when component mounts
+        setIsScrolled(window.scrollY > 10);
+
+        const handleScroll = () => {
+          // Simple threshold-based detection
+          if (window.scrollY > 10) {
+            setIsScrolled(true);
+          } else {
+            setIsScrolled(false);
+          }
+        };
+
+        // Passive: true improves scroll performance
+        window.addEventListener('scroll', handleScroll, { passive: true });
+
+        // Clean up
+        return () => {
+          window.removeEventListener('scroll', handleScroll);
+        };
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    // Run the check
+    checkScroll();
   }, []);
 
   // Extract username from email if displayName is not available
@@ -337,53 +355,53 @@ export default function Navbar({ isAuthenticated: propIsAuthenticated, onLogout:
 
         {/* Mobile Menu */}
         {isOpen && (
-          <div className="md:hidden mt-2 py-2 bg-white rounded-lg shadow-lg">
-            <div className="flex flex-col space-y-2 px-3">
+          <div className="md:hidden mt-2 py-3 bg-white rounded-lg shadow-lg">
+            <div className="flex flex-col space-y-3 px-4">
               <Link
                 href="/"
-                className="text-sm text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-2 py-0.5"
+                className="text-base text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
                 onClick={() => setIsOpen(false)}
               >
                 Home
               </Link>
               <Link
                 href="/presets"
-                className="text-sm text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-2 py-0.5"
+                className="text-base text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
                 onClick={() => setIsOpen(false)}
               >
                 Presets
               </Link>
               <Link
                 href="/community"
-                className="text-sm text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-2 py-0.5"
+                className="text-base text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
                 onClick={() => setIsOpen(false)}
               >
                 Community
               </Link>
               <Link
                 href="/courses"
-                className="text-sm text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-2 py-0.5"
+                className="text-base text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
                 onClick={() => setIsOpen(false)}
               >
                 Courses
               </Link>
               <Link
                 href="/pricing"
-                className="text-sm text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-2 py-0.5"
+                className="text-base text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
                 onClick={() => setIsOpen(false)}
               >
                 Pricing
               </Link>
               {/* <Link
                 href="/blog"
-                className="text-sm text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-2 py-0.5"
+                className="text-base text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
                 onClick={() => setIsOpen(false)}
               >
                 Blog
               </Link> */}
               <Link
                 href="/faq"
-                className="text-sm text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-2 py-0.5"
+                className="text-base text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
                 onClick={() => setIsOpen(false)}
               >
                 FAQ
@@ -393,7 +411,7 @@ export default function Navbar({ isAuthenticated: propIsAuthenticated, onLogout:
                 <>
                   <Link
                     href="/profile"
-                    className="text-sm text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-2 py-0.5"
+                    className="text-base text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
                     onClick={() => setIsOpen(false)}
                   >
                     Profile
@@ -401,7 +419,7 @@ export default function Navbar({ isAuthenticated: propIsAuthenticated, onLogout:
 
                   <Link
                     href="/profile/settings"
-                    className="text-sm text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-2 py-0.5"
+                    className="text-base text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
                     onClick={() => setIsOpen(false)}
                   >
                     Account Settings
@@ -411,7 +429,7 @@ export default function Navbar({ isAuthenticated: propIsAuthenticated, onLogout:
                   {hasAdmin && (
                     <Link
                       href="/admin"
-                      className="text-sm text-purple-700 hover:text-purple-900 transition-colors font-medium border-l-4 border-purple-600 pl-2 py-0.5"
+                      className="text-base text-purple-700 hover:text-purple-900 transition-colors font-medium border-l-4 border-purple-600 pl-3 py-1.5"
                       onClick={() => setIsOpen(false)}
                     >
                       Admin
@@ -422,7 +440,7 @@ export default function Navbar({ isAuthenticated: propIsAuthenticated, onLogout:
                     onClick={(e) => {
                       onLogout();
                     }}
-                    className="text-sm text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-2 py-0.5 text-left w-full"
+                    className="text-base text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5 text-left w-full"
                   >
                     Logout
                   </button>
@@ -431,14 +449,14 @@ export default function Navbar({ isAuthenticated: propIsAuthenticated, onLogout:
                 <>
                   <Link
                     href="/login"
-                    className="text-sm text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-2 py-0.5"
+                    className="text-base text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
                     onClick={() => setIsOpen(false)}
                   >
                     Login
                   </Link>
                   <Link
                     href="/signup"
-                    className="text-sm bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors text-center mt-2"
+                    className="text-base bg-purple-600 text-white px-5 py-2.5 rounded-md hover:bg-purple-700 transition-colors text-center mt-3"
                     onClick={() => setIsOpen(false)}
                   >
                     Sign Up

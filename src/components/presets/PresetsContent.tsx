@@ -582,11 +582,11 @@ function PresetsPage({ onNavigate, onAuthRequired, initialTab = 'premium' }: Pre
         <div className="mb-8 mt-4 relative z-20">
           <div className="bg-white shadow-xl rounded-2xl border border-gray-100 p-5">
             <div className="flex flex-wrap md:justify-between justify-center items-center">
-              <div className="flex flex-wrap justify-center md:justify-start gap-3 w-full md:w-auto">
+              <div className="flex flex-col sm:flex-row flex-wrap justify-center md:justify-start gap-3 w-full md:w-auto">
                 {/* Premium tab */}
                 <button
                   onClick={() => handleTabChange('premium')}
-                  className={`py-3 px-5 rounded-xl font-medium text-lg transition-all flex items-center justify-center gap-2 min-w-[140px] ${
+                  className={`py-3 px-5 rounded-xl font-medium text-lg transition-all flex items-center justify-center gap-2 min-w-[140px] w-full sm:w-auto ${
                     activeTab === 'premium'
                       ? 'bg-gradient-to-r from-amber-700 to-amber-600 text-white shadow-lg shadow-amber-300/30 scale-105'
                       : 'text-gray-600 hover:text-amber-600 hover:bg-amber-50'
@@ -604,7 +604,7 @@ function PresetsPage({ onNavigate, onAuthRequired, initialTab = 'premium' }: Pre
                 </button>
                 <button
                   onClick={() => handleTabChange('vocal-chain')}
-                  className={`py-3 px-5 rounded-xl font-medium text-lg transition-all flex items-center justify-center gap-2 min-w-[140px] ${
+                  className={`py-3 px-5 rounded-xl font-medium text-lg transition-all flex items-center justify-center gap-2 min-w-[140px] w-full sm:w-auto ${
                     activeTab === 'vocal-chain'
                       ? 'bg-gradient-to-r from-purple-700 to-purple-600 text-white shadow-lg shadow-purple-300/30 scale-105'
                       : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50'
@@ -628,7 +628,7 @@ function PresetsPage({ onNavigate, onAuthRequired, initialTab = 'premium' }: Pre
 
                 <button
                   onClick={() => handleTabChange('instrument')}
-                  className={`py-3 px-5 rounded-xl font-medium text-lg transition-all flex items-center justify-center gap-2 min-w-[140px] ${
+                  className={`py-3 px-5 rounded-xl font-medium text-lg transition-all flex items-center justify-center gap-2 min-w-[140px] w-full sm:w-auto ${
                     activeTab === 'instrument'
                       ? 'bg-gradient-to-r from-blue-700 to-blue-600 text-white shadow-lg shadow-blue-300/30 scale-105'
                       : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
