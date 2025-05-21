@@ -220,6 +220,7 @@ const PresetSync = ({
           if (indexData[category] && Array.isArray(indexData[category])) {
             return indexData[category].map((preset: string | { id: string }) => {
               const folderName = typeof preset === 'string' ? preset : preset.id;
+              // Keep original folderName for path (no encoding yet, as we'll encode when constructing URLs)
               return `${category}/${folderName}/`;
             });
           }
@@ -229,7 +230,7 @@ const PresetSync = ({
       }
 
       // Fallback to querying the directory
-      const folderUrl = `https://${presetS3Url}/${category}/`;
+      const folderUrl = `https://${presetS3Url}/${encodeURIComponent(category)}/`;
 
       try {
         const response = await fetch(folderUrl);
@@ -289,8 +290,13 @@ const PresetSync = ({
         credit_cost: 0
       };
 
+      // Construct encoded URL path by encoding each path segment individually
+      const encodedPath = folderPath.split('/').map(segment =>
+        segment ? encodeURIComponent(segment) : ''
+      ).join('/');
+
       // Try to fetch metadata
-      const metaUrl = `https://${presetS3Url}/${folderPath}meta.json`;
+      const metaUrl = `https://${presetS3Url}/${encodedPath}meta.json`;
       try {
         const metaResponse = await fetch(metaUrl);
         if (metaResponse.ok) {
@@ -330,21 +336,22 @@ const PresetSync = ({
           }
         }
       } catch (error) {
-        // Silently continue without metadata
+        // Log the error to help debug metadata issues
+        console.error(`Error fetching or parsing metadata for ${folderPath}:`, error);
       }
 
       // Set image URLs directly without HEAD requests - UI will handle fallbacks
       // Try JPEG first as it's most common
-      presetData.image = `https://${presetS3Url}/${folderPath}image.jpeg`;
+      presetData.image = `https://${presetS3Url}/${encodedPath}image.jpeg`;
 
       // Set MP3 URLs directly - UI will handle fallbacks if they don't exist
       presetData.mp3s = {
-        before: `https://${presetS3Url}/${folderPath}mp3/before.mp3`,
-        after: `https://${presetS3Url}/${folderPath}mp3/after.mp3`
+        before: `https://${presetS3Url}/${encodedPath}mp3/before.mp3`,
+        after: `https://${presetS3Url}/${encodedPath}mp3/after.mp3`
       };
 
       // Set full preset URL directly
-      presetData.fullPreset = `https://${presetS3Url}/${folderPath}full_preset.zip`;
+      presetData.fullPreset = `https://${presetS3Url}/${encodedPath}full_preset.zip`;
 
       // Add full preset ID to metadata
       presetData.metadata = presetData.metadata || {};
