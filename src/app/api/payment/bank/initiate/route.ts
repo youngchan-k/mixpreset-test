@@ -32,9 +32,9 @@ export async function POST(request: Request) {
       success: true,
       referenceCode,
       bankDetails: {
-        accountName: 'MixPreset Inc.',
-        accountNumber: '12345678901234',
-        bankName: 'Example Bank'
+        accountName: '\uD3B8\uC131\uC900 (Mixpreset Inc.)',
+        accountNumber: '1000-6852-6003',
+        bankName: 'Toss Bank'
       }
     });
   } catch (error) {

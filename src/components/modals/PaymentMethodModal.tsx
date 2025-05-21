@@ -8,7 +8,8 @@ import {
 import BankTransferDetails from '../payment/BankTransferDetails';
 import PaymentSuccessModal from './PaymentSuccessModal';
 
-export type PaymentMethodType = 'paypal' | 'bank' | 'polar' | 'test' | null;
+// export type PaymentMethodType = 'paypal' | 'bank' | 'polar' | 'test' | null;
+export type PaymentMethodType = 'paypal' | 'bank' | 'test' | null;
 
 interface BankDetails {
   referenceCode: string;
@@ -64,46 +65,46 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
       return;
     }
 
-    if (selectedMethod === 'polar') {
-      setIsProcessing(true);
+    // if (selectedMethod === 'polar') {
+    //   setIsProcessing(true);
 
-      try {
-        // Get current user info from localStorage or create test data if not found
-        let userData;
-        const userDataStr = localStorage.getItem('userData');
+    //   try {
+    //     // Get current user info from localStorage or create test data if not found
+    //     let userData;
+    //     const userDataStr = localStorage.getItem('userData');
 
-        if (!userDataStr) {
-          // Create temporary test user data
-          userData = {
-            uid: `test_user_${Date.now()}`,
-            email: 'test@example.com',
-            displayName: 'Test User'
-          };
-          console.log('Created temporary test user for Polar:', userData);
-        } else {
-          userData = JSON.parse(userDataStr);
-        }
+    //     if (!userDataStr) {
+    //       // Create temporary test user data
+    //       userData = {
+    //         uid: `test_user_${Date.now()}`,
+    //         email: 'test@example.com',
+    //         displayName: 'Test User'
+    //       };
+    //       console.log('Created temporary test user for Polar:', userData);
+    //     } else {
+    //       userData = JSON.parse(userDataStr);
+    //     }
 
-        // Redirect to Polar checkout
-        const params = new URLSearchParams({
-          price: (amount * 100).toString(), // Convert to cents
-          currency: 'USD',
-          success_url: window.location.origin + '/profile/credits?payment_success=true',
-          cancel_url: window.location.origin + '/profile/credits?payment_cancelled=true',
-          // Add metadata to identify the transaction later
-          'metadata[userId]': userData.uid || '',
-          'metadata[userEmail]': userData.email || '',
-          'metadata[planName]': planName,
-          'metadata[credits]': planName.includes('credits') ? planName.split(' ')[0] : '0'
-        });
+    //     // Redirect to Polar checkout
+    //     const params = new URLSearchParams({
+    //       price: (amount * 100).toString(), // Convert to cents
+    //       currency: 'USD',
+    //       success_url: window.location.origin + '/profile/credits?payment_success=true',
+    //       cancel_url: window.location.origin + '/profile/credits?payment_cancelled=true',
+    //       // Add metadata to identify the transaction later
+    //       'metadata[userId]': userData.uid || '',
+    //       'metadata[userEmail]': userData.email || '',
+    //       'metadata[planName]': planName,
+    //       'metadata[credits]': planName.includes('credits') ? planName.split(' ')[0] : '0'
+    //     });
 
-        window.location.href = `/api/checkout/polar?${params.toString()}`;
-        return;
-      } catch (error) {
-        console.error('Error redirecting to Polar:', error);
-        setIsProcessing(false);
-      }
-    }
+    //     window.location.href = `/api/checkout/polar?${params.toString()}`;
+    //     return;
+    //   } catch (error) {
+    //     console.error('Error redirecting to Polar:', error);
+    //     setIsProcessing(false);
+    //   }
+    // }
 
     if (selectedMethod === 'bank') {
       setIsProcessing(true);
@@ -509,7 +510,7 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
                   </div>
 
                   {/* Polar.sh Option */}
-                  <div
+                  {/* <div
                     className={`border rounded-lg p-4 cursor-pointer transition-colors ${
                       selectedMethod === 'polar'
                         ? 'border-purple-500 bg-purple-50'
@@ -547,7 +548,7 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </div> */}
 
                   {/* Bank Transfer Option */}
                   <div

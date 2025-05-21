@@ -274,14 +274,6 @@ function PresetDetail({ onNavigate, presetId, onAuthRequired }: PresetDetailProp
     setCategoryCounts(counts);
   };
 
-  const handleRelatedPresetClick = (relatedPreset: Preset) => {
-    // Clean the preset ID for URL
-    const cleanedId = relatedPreset.id.replace(/\s+/g, '_');
-
-    // Use new URL structure
-    onNavigate('preset-detail', `${relatedPreset.category}/${cleanedId}`);
-  };
-
   // Wrapper function to adapt the interface for RelatedPresets component
   const handleRelatedNavigate = (page: string, param?: string | null) => {
     onNavigate(page, param);
@@ -322,213 +314,228 @@ function PresetDetail({ onNavigate, presetId, onAuthRequired }: PresetDetailProp
         </div>
       ) : (
         <div className="flex flex-col min-h-screen">
-          <PresetHeader
-            preset={preset}
-            isFavorite={isFavorite}
-            setIsFavorite={setIsFavorite}
-            onAuthRequired={onAuthRequired}
-            onDownloadComplete={refreshDownloadHistory}
-          />
+          <div className="w-full relative z-10">
+            <PresetHeader
+              preset={preset}
+              isFavorite={isFavorite}
+              setIsFavorite={setIsFavorite}
+              onAuthRequired={onAuthRequired}
+              onDownloadComplete={refreshDownloadHistory}
+            />
+          </div>
 
-          <div className="container mx-auto px-6 py-2">
-            <div className="max-w-6xl mx-auto">
-              {/* Unified layout without boxed separation */}
-              <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100 mb-6">
-                {/* Top section with image and stacked columns */}
-                <div className="flex flex-col md:flex-row gap-6">
-                  {/* Square Image */}
-                  <div className="md:w-1/3">
-                    <div className="aspect-square rounded-xl flex items-center justify-center overflow-hidden shadow-lg border border-gray-100">
-                      {preset.image ? (
-                        <img
-                          src={preset.image}
-                          alt={preset.title}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            // Try alternative image formats if JPEG fails
-                            const target = e.currentTarget;
+          {/* Main details section */}
+          <div className="bg-white min-h-screen">
+            <div className="container mx-auto px-6">
+              <div className="max-w-6xl mx-auto -mt-16 pt-8">
+                {/* Unified layout without boxed separation */}
+                <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100 mb-6">
+                  {/* Top section with image and stacked columns */}
+                  <div className="flex flex-col md:flex-row gap-6">
+                    {/* Square Image */}
+                    <div className="md:w-1/3">
+                      <div className="aspect-square rounded-xl flex items-center justify-center overflow-hidden shadow-lg border border-gray-100">
+                        {preset.image ? (
+                          <img
+                            src={preset.image}
+                            alt={preset.title}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              // Try alternative image formats if JPEG fails
+                              const target = e.currentTarget;
 
-                            // Extract the base URL without the extension
-                            const currentSrc = target.src;
-                            const baseUrl = currentSrc.substring(0, currentSrc.lastIndexOf('.'));
+                              // Extract the base URL without the extension
+                              const currentSrc = target.src;
+                              const baseUrl = currentSrc.substring(0, currentSrc.lastIndexOf('.'));
 
-                            // Try different extensions in order
-                            if (currentSrc.endsWith('jpeg')) {
-                              target.src = `${baseUrl.substring(0, baseUrl.length)}.png`;
-                            } else if (currentSrc.endsWith('png')) {
-                              target.src = `${baseUrl.substring(0, baseUrl.length)}.jpg`;
-                            } else if (currentSrc.endsWith('jpg')) {
-                              target.src = `${baseUrl.substring(0, baseUrl.length)}.webp`;
-                            } else {
-                              // If all formats fail, try constructing a more reliable path
-                              const category = preset.category;
-                              const presetId = preset.id.replace(/\s+/g, '_');
-                              target.src = `https://${presetS3Url}/${category}/${presetId}/image.png`;
+                              // Try different extensions in order
+                              if (currentSrc.endsWith('jpeg')) {
+                                target.src = `${baseUrl.substring(0, baseUrl.length)}.png`;
+                              } else if (currentSrc.endsWith('png')) {
+                                target.src = `${baseUrl.substring(0, baseUrl.length)}.jpg`;
+                              } else if (currentSrc.endsWith('jpg')) {
+                                target.src = `${baseUrl.substring(0, baseUrl.length)}.webp`;
+                              } else {
+                                // If all formats fail, try constructing a more reliable path
+                                const category = preset.category;
+                                const presetId = preset.id.replace(/\s+/g, '_');
+                                target.src = `https://${presetS3Url}/${category}/${presetId}/image.png`;
 
-                              // Set up one more fallback for the last attempt
-                              target.onerror = () => {
-                                // If standard formats fail, replace with gradient background
-                                const imgContainer = target.parentElement;
-                                if (imgContainer) {
-                                  target.style.display = 'none';
-                                  imgContainer.style.background = "linear-gradient(to right, #7e3af2, #6366f1)";
-                                  imgContainer.style.display = "flex";
-                                  imgContainer.style.alignItems = "center";
-                                  imgContainer.style.justifyContent = "center";
+                                // Set up one more fallback for the last attempt
+                                target.onerror = () => {
+                                  // If standard formats fail, replace with gradient background
+                                  const imgContainer = target.parentElement;
+                                  if (imgContainer) {
+                                    target.style.display = 'none';
+                                    imgContainer.style.background = "linear-gradient(to right, #7e3af2, #6366f1)";
+                                    imgContainer.style.display = "flex";
+                                    imgContainer.style.alignItems = "center";
+                                    imgContainer.style.justifyContent = "center";
 
-                                  const placeholder = document.createElement('div');
-                                  placeholder.className = "text-center";
-                                  placeholder.innerHTML = `
-                                    <div class="text-2xl text-white opacity-70">${preset.category === 'vocal_chain' ? 'Vocal Chain' : preset.category.charAt(0).toUpperCase() + preset.category.slice(1)}</div>
-                                    <div class="text-sm text-white/70 mt-2">${
-                                      Array.isArray(preset.filters.genre) ? preset.filters.genre[0] : preset.filters.genre
-                                    }</div>
-                                  `;
-                                  imgContainer.appendChild(placeholder);
-                                }
-                              };
-                            }
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-r from-purple-800 to-purple-600 flex items-center justify-center">
-                          <span className="text-2xl text-white opacity-50">{preset.category === 'vocal_chain' ? 'Vocal Chain' : preset.category.charAt(0).toUpperCase() + preset.category.slice(1)}</span>
+                                    const placeholder = document.createElement('div');
+                                    placeholder.className = "text-center";
+                                    placeholder.innerHTML = `
+                                      <div class="text-2xl text-white opacity-70">${preset.category === 'vocal_chain' ? 'Vocal Chain' : preset.category.charAt(0).toUpperCase() + preset.category.slice(1)}</div>
+                                      <div class="text-sm text-white/70 mt-2">${
+                                        Array.isArray(preset.filters.genre) ? preset.filters.genre[0] : preset.filters.genre
+                                      }</div>
+                                    `;
+                                    imgContainer.appendChild(placeholder);
+                                  }
+                                };
+                              }
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-r from-purple-800 to-purple-600 flex items-center justify-center">
+                            <span className="text-2xl text-white opacity-50">{preset.category === 'vocal_chain' ? 'Vocal Chain' : preset.category.charAt(0).toUpperCase() + preset.category.slice(1)}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Two vertically stacked columns */}
+                    <div className="md:w-2/3 flex flex-col justify-between h-full">
+                      {/* Combined box for description, filters and audio preview */}
+                      <div className="bg-white rounded-xl p-4 flex-1 mb-4 border border-gray-100 shadow-sm">
+                        {/* Description */}
+                        <div className="mb-4">
+                          <h3 className="text-sm text-purple-600 font-semibold uppercase mb-2">Description</h3>
+                          <p className="text-sm text-gray-700 leading-relaxed">
+                            {preset.description || `This preset is designed for ${Array.isArray(preset.filters.daw)
+                              ? preset.filters.daw.join(' or ')
+                              : preset.filters.daw}
+                              and works best with ${Array.isArray(preset.filters.gender)
+                              ? preset.filters.gender.join(' or ')
+                              : preset.filters.gender}
+                              vocals in the ${Array.isArray(preset.filters.genre)
+                              ? preset.filters.genre.join(' or ')
+                              : preset.filters.genre} genre.`}
+                          </p>
                         </div>
-                      )}
-                    </div>
-                  </div>
 
-                  {/* Two vertically stacked columns */}
-                  <div className="md:w-2/3 flex flex-col justify-between h-full">
-                    {/* Description Column */}
-                    <div className="bg-gray-50 rounded-xl p-4 flex-1 mb-4 border border-gray-100 shadow-sm">
-                      <h3 className="text-sm text-purple-600 font-semibold uppercase mb-2">Description</h3>
-                      <p className="text-sm text-gray-700 leading-relaxed">
-                        {preset.description || `This preset is designed for ${Array.isArray(preset.filters.daw)
-                          ? preset.filters.daw.join(' or ')
-                          : preset.filters.daw}
-                          and works best with ${Array.isArray(preset.filters.gender)
-                          ? preset.filters.gender.join(' or ')
-                          : preset.filters.gender}
-                          vocals in the ${Array.isArray(preset.filters.genre)
-                          ? preset.filters.genre.join(' or ')
-                          : preset.filters.genre} genre.`}
-                      </p>
-                    </div>
+                        {/* Divider */}
+                        <div className="border-t border-gray-100 my-4"></div>
 
-                    {/* Filters moved up */}
-                    <div className="bg-gray-50 rounded-xl p-4 flex-1 mb-4 border border-gray-100 shadow-sm">
-                      <div className="grid grid-cols-1 gap-3">
-                        {/* DAW */}
-                        {preset.filters.daw && (
-                          <div className="flex flex-row bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
-                            <div className="flex items-center justify-center text-sm text-purple-600 font-semibold uppercase min-w-[100px] p-2 flex-shrink-0 bg-gray-50 border-r border-gray-100">DAW</div>
-                            <div className="flex-1 p-2">
-                              {Array.isArray(preset.filters.daw) ? (
-                                <div className="flex flex-wrap gap-1">
-                                  {preset.filters.daw.map((item, index) => (
-                                    <span key={index} className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                                      {item}
-                                    </span>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="px-2 py-0.5 rounded-full text-xs font-medium inline-block bg-blue-100 text-blue-700">
-                                  {preset.filters.daw}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Genre */}
-                        {preset.filters.genre && (
-                          <div className="flex flex-row bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
-                            <div className="flex items-center justify-center text-sm text-purple-600 font-semibold uppercase min-w-[100px] p-2 flex-shrink-0 bg-gray-50 border-r border-gray-100">GENRE</div>
-                            <div className="flex-1 p-2">
-                              {Array.isArray(preset.filters.genre) ? (
-                                <div className="flex flex-wrap gap-1">
-                                  {preset.filters.genre.map((item, index) => (
-                                    <span key={index} className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
-                                      {item}
-                                    </span>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="px-2 py-0.5 rounded-full text-xs font-medium inline-block bg-purple-100 text-purple-700">
-                                  {preset.filters.genre}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Gender */}
-                        {preset.filters.gender && (
-                          <div className="flex flex-row bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
-                            <div className="flex items-center justify-center text-sm text-purple-600 font-semibold uppercase min-w-[100px] p-2 flex-shrink-0 bg-gray-50 border-r border-gray-100">GENDER</div>
-                            <div className="flex-1 p-2">
-                              {Array.isArray(preset.filters.gender) ? (
-                                <div className="flex flex-wrap gap-1">
-                                  {preset.filters.gender.map((item, index) => (
-                                    <span key={index} className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                                      {item}
-                                    </span>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="px-2 py-0.5 rounded-full text-xs font-medium inline-block bg-green-100 text-green-700">
-                                  {preset.filters.gender}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Plugin */}
-                        {preset.filters.plugin && preset.filters.plugin !== 'Any' && (
-                          <div className="flex flex-row bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
-                            <div className="flex items-center justify-center text-sm text-purple-600 font-semibold uppercase min-w-[100px] p-2 flex-shrink-0 bg-gray-50 border-r border-gray-100">PLUGINS</div>
-                            <div className="flex-1 p-2">
-                              {Array.isArray(preset.filters.plugin) ? (
-                                <div className="flex flex-wrap gap-1">
-                                  {preset.filters.plugin.map((item, index) => (
-                                    <span key={index} className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-                                      {item}
-                                    </span>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="px-2 py-0.5 rounded-full text-xs font-medium inline-block bg-amber-100 text-amber-700">
-                                  {preset.filters.plugin}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Audio Preview moved within the filters box */}
-                        <div className="mt-3 pt-3 border-t border-gray-200">
-                          <div className="text-sm text-purple-600 font-semibold uppercase mb-2">Audio Preview</div>
+                        {/* Audio Preview */}
+                        <div className="mb-4">
+                          {/* <div className="text-sm text-purple-600 font-semibold uppercase mb-2">Audio Preview</div> */}
                           <PresetAudio
                             preset={preset}
                             presets={allPresets}
                           />
                         </div>
+
+                        {/* Divider */}
+                        <div className="border-t border-gray-100 my-4"></div>
+
+                        {/* Filters section */}
+                        <div className="grid grid-cols-1 gap-3">
+                          {/* DAW */}
+                          {preset.filters.daw && (
+                            <div className="flex flex-row bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                              <div className="flex items-center justify-center text-sm text-purple-600 font-semibold uppercase min-w-[80px] p-2 flex-shrink-0 bg-gray-200 border-r border-gray-200 shadow-sm">DAW</div>
+                              <div className="flex-1 p-2">
+                                {Array.isArray(preset.filters.daw) ? (
+                                  <div className="flex flex-wrap gap-1">
+                                    {preset.filters.daw.map((item, index) => (
+                                      <span key={index} className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                                        {item}
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-full text-xs font-medium inline-block bg-blue-100 text-blue-700">
+                                    {preset.filters.daw}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* GENRE, GENDER, PLUGINS in a single row */}
+                          <div className="flex flex-col md:flex-row gap-3">
+                            {/* Genre */}
+                            {preset.filters.genre && (
+                              <div className="flex-1 flex flex-row bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                                <div className="flex items-center justify-center text-sm text-purple-600 font-semibold uppercase min-w-[80px] p-2 flex-shrink-0 bg-gray-200 border-r border-gray-200 shadow-sm">GENRE</div>
+                                <div className="flex-1 p-2">
+                                  {Array.isArray(preset.filters.genre) ? (
+                                    <div className="flex flex-wrap gap-1">
+                                      {preset.filters.genre.map((item, index) => (
+                                        <span key={index} className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                                          {item}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <span className="px-2 py-0.5 rounded-full text-xs font-medium inline-block bg-purple-100 text-purple-700">
+                                      {preset.filters.genre}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Gender */}
+                            {preset.filters.gender && (
+                              <div className="flex-1 flex flex-row bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                                <div className="flex items-center justify-center text-sm text-purple-600 font-semibold uppercase min-w-[80px] p-2 flex-shrink-0 bg-gray-200 border-r border-gray-200 shadow-sm">GENDER</div>
+                                <div className="flex-1 p-2">
+                                  {Array.isArray(preset.filters.gender) ? (
+                                    <div className="flex flex-wrap gap-1">
+                                      {preset.filters.gender.map((item, index) => (
+                                        <span key={index} className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                                          {item}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <span className="px-2 py-0.5 rounded-full text-xs font-medium inline-block bg-green-100 text-green-700">
+                                      {preset.filters.gender}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Plugin */}
+                            {preset.filters.plugin && preset.filters.plugin !== 'Any' && (
+                              <div className="flex-1 flex flex-row bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                                <div className="flex items-center justify-center text-sm text-purple-600 font-semibold uppercase min-w-[80px] p-2 flex-shrink-0 bg-gray-200 border-r border-gray-200 shadow-sm">PLUGINS</div>
+                                <div className="flex-1 p-2">
+                                  {Array.isArray(preset.filters.plugin) ? (
+                                    <div className="flex flex-wrap gap-1">
+                                      {preset.filters.plugin.map((item, index) => (
+                                        <span key={index} className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                                          {item}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <span className="px-2 py-0.5 rounded-full text-xs font-medium inline-block bg-amber-100 text-amber-700">
+                                      {preset.filters.plugin}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Related Presets - enhanced styling */}
-              <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100 mb-6">
-                <h3 className="text-2xl font-bold text-gray-800 mb-4">Related Presets</h3>
-                <RelatedPresets
-                  currentPreset={preset}
-                  allPresets={allPresets}
-                  onNavigate={handleRelatedNavigate}
-                />
+                {/* Related Presets - enhanced styling */}
+                <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100 mb-6">
+                  <h3 className="text-2xl font-bold text-gray-800 mb-4">Related Presets</h3>
+                  <RelatedPresets
+                    currentPreset={preset}
+                    allPresets={allPresets}
+                    onNavigate={handleRelatedNavigate}
+                  />
+                </div>
               </div>
             </div>
           </div>

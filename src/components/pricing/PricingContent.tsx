@@ -37,8 +37,8 @@ const oneTimePurchases: Plan[] = [
     name: 'Basic Credit Pack',
     description: 'Perfect for trying out our premium presets.',
     category: 'Presets',
-    price: 14.99,
-    credits: 100,
+    price: 0.1,
+    credits: 1,
     features: []
   },
   {
@@ -247,7 +247,7 @@ export default function PricingContent() {
                       Most Popular
                     </div>
                   )}
-                  <div className={`p-8 ${purchase.popular ? 'bg-purple-50 group-hover:bg-purple-600' : ''}`}>
+                  <div className="p-8">
                     <h3 className="text-2xl font-bold mb-2 text-gray-800 group-hover:text-white transition-colors">
                       {purchase.name}
                     </h3>

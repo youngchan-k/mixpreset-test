@@ -17,6 +17,7 @@ interface HeroSectionProps {
   stats?: {
     label: string;
     value: string;
+    startValue?: string;
   }[];
   showWaveAnimation?: boolean;
   showSocialProof?: boolean;
@@ -52,12 +53,19 @@ const HeroSection = ({
 }: HeroSectionProps) => {
   const [offset, setOffset] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
+  const [animatedStats, setAnimatedStats] = useState<{[key: number]: string}>({});
 
   // Set the height based on prop - make consistent across all pages
   const heightClasses = {
     small: 'py-16 md:py-24',
     medium: 'py-24 md:py-32',
     large: 'py-28 md:py-40',
+  };
+
+  // Add padding bottom when using shapes to avoid overlap
+  const getShapePadding = () => {
+    if (shape === 'none') return '';
+    return 'pb-16'; // Add extra padding at bottom when using shapes
   };
 
   // Handle parallax effect
@@ -80,12 +88,69 @@ const HeroSection = ({
     setIsVisible(true);
   }, []);
 
+  // Handle stats counter animation
+  useEffect(() => {
+    if (!isVisible || stats.length === 0) return;
+
+    const animationDuration = 2000; // 2 seconds
+    const frameDuration = 16; // ~60fps
+    const frames = animationDuration / frameDuration;
+
+    let frame = 0;
+    const initialStats: {[key: number]: string} = {};
+
+    // Animation interval
+    const timer = setInterval(() => {
+      const newAnimatedStats: {[key: number]: string} = {};
+
+      stats.forEach((stat, index) => {
+        // Parse the numeric part of the value
+        const targetValue = stat.value.match(/(\d+)/)?.[0] || '0';
+        const targetNumber = parseInt(targetValue, 10);
+
+        // Get suffix like "+" or "k+"
+        const suffix = stat.value.match(/\d+(.*)/)?.[1] || '';
+
+        // Calculate the current value based on animation progress
+        const progress = Math.min(frame / frames, 1);
+        const currentNumber = Math.floor(targetNumber * progress);
+
+        // Special handling for rating (like 4.9/5)
+        if (stat.value.includes('/')) {
+          const [targetRating, maxRating] = stat.value.split('/');
+          const targetRatingNum = parseFloat(targetRating);
+          const currentRating = (targetRatingNum * progress).toFixed(1);
+          newAnimatedStats[index] = `${currentRating}/${maxRating}`;
+        } else {
+          // Regular number with possible suffix
+          newAnimatedStats[index] = `${currentNumber}${suffix}`;
+        }
+      });
+
+      setAnimatedStats(newAnimatedStats);
+
+      frame++;
+      if (frame > frames) {
+        clearInterval(timer);
+
+        // Set final values
+        const finalStats: {[key: number]: string} = {};
+        stats.forEach((stat, index) => {
+          finalStats[index] = stat.value;
+        });
+        setAnimatedStats(finalStats);
+      }
+    }, frameDuration);
+
+    return () => clearInterval(timer);
+  }, [isVisible, stats]);
+
   // Set the shape based on prop
   const getShape = () => {
     switch (shape) {
       case 'curved':
         return (
-          <div className="absolute bottom-0 left-0 right-0 h-16 bg-white rounded-t-[50px]"></div>
+          <div className="absolute bottom-0 left-0 right-0 h-24 bg-white rounded-t-[50px]"></div>
         );
       case 'wave':
         return (
@@ -148,7 +213,7 @@ const HeroSection = ({
       )}
 
       {/* Content */}
-      <div className={`relative z-20 container ${heightClasses[height]} flex items-center`}>
+      <div className={`relative z-20 container ${heightClasses[height]} ${getShapePadding()} flex items-center`}>
         <div className={`w-full ${centered ? 'max-w-5xl mx-auto text-center' : 'max-w-4xl'} relative`}>
           {/* Animated entry */}
           <div className={`transition-all duration-1000 ease-out transform ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
@@ -201,13 +266,15 @@ const HeroSection = ({
               </p>
             )}
 
-            {/* Stats display */}
+            {/* Stats display - Removed box and added animation */}
             {stats.length > 0 && (
-              <div className={`flex flex-wrap justify-center gap-4 sm:gap-6 md:gap-8 mb-8 sm:mb-10 text-white transition-all duration-1000 delay-300 transform ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+              <div className={`flex flex-wrap justify-center gap-8 sm:gap-10 md:gap-16 mb-8 sm:mb-10 text-white transition-all duration-1000 delay-300 transform ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
                 {stats.map((stat, index) => (
-                  <div key={index} className="text-center px-5 py-3 bg-white/10 backdrop-blur-sm rounded-lg border border-white/10 shadow-lg">
-                    <div className="text-xl sm:text-2xl md:text-3xl font-bold">{stat.value}</div>
-                    <div className="text-xs sm:text-sm text-purple-200">{stat.label}</div>
+                  <div key={index} className="text-center">
+                    <div className="text-2xl sm:text-3xl md:text-4xl font-bold">
+                      {animatedStats[index] || '0'}
+                    </div>
+                    <div className="text-sm sm:text-base text-purple-200 mt-1">{stat.label}</div>
                   </div>
                 ))}
               </div>

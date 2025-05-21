@@ -3,11 +3,10 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import HeroSection from '@/components/HeroSection';
-import { UserProfile, getUserProfile, addPaymentRecord, PaymentRecord as LocalPaymentRecord } from '@/services/userService';
+import { UserProfile, getUserProfile, PaymentRecord as LocalPaymentRecord } from '@/services/userService';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserCreditBalance } from '@/lib/creditTracking';
 import PaymentMethodModal, { PaymentMethodType } from '@/components/modals/PaymentMethodModal';
-import { recordPayment, calculateUserCredits } from '@/lib/paymentTracking';
 
 // Mock credit plans for quick purchase
 const creditPlans = [
@@ -150,20 +149,12 @@ export default function CreditsPage() {
 
       try {
         // Record the payment method used
+        // const paymentMethodName = paymentMethod === 'paypal' ? 'PayPal' :
+        //                          paymentMethod === 'bank' ? 'Account Transfer' :
+        //                          paymentMethod === 'polar' ? 'Polar.sh' : 'Unknown';
         const paymentMethodName = paymentMethod === 'paypal' ? 'PayPal' :
                                  paymentMethod === 'bank' ? 'Account Transfer' :
-                                 paymentMethod === 'polar' ? 'Polar.sh' : 'Unknown';
-
-        // Record the payment in DynamoDB using the PaymentTracking service
-        const paymentId = await recordPayment(
-          currentUser.uid,
-          currentUser.email || '',
-          selectedPlan.name,
-          priceType,
-          priceAmount,
-          planCredits,
-          paymentMethodName // Pass the payment method name to the record function
-        );
+                                 paymentMethod === 'test' ? 'Test' : 'Unknown';
 
         // Also update the local record for immediate UI updates
         const record: Omit<LocalPaymentRecord, 'id'> = {
@@ -176,9 +167,6 @@ export default function CreditsPage() {
           confirmed: true,
           paymentMethod: paymentMethodName // Add the payment method to the record
         };
-
-        // Save payment record locally
-        const success = await addPaymentRecord(record);
 
         // Update credits immediately - refresh the page to show updated credits
         window.location.reload();

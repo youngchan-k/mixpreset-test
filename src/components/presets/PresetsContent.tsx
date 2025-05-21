@@ -278,9 +278,12 @@ function PresetsPage({ onNavigate, onAuthRequired, initialTab = 'premium' }: Pre
     // Trigger a preset refresh
     setPresetSyncTrigger(prev => prev + 1);
 
-    // Navigate to the category page URL
+    // Update the URL without triggering a navigation event
     const categoryForUrl = categoryMapping[tab] || tab;
-    router.push(`/presets/${categoryForUrl}`);
+    if (typeof window !== 'undefined') {
+      // Update URL without page reload
+      window.history.pushState({}, '', `/presets/${categoryForUrl}`);
+    }
   };
 
   // Handle favorite toggling with auth check
@@ -569,21 +572,21 @@ function PresetsPage({ onNavigate, onAuthRequired, initialTab = 'premium' }: Pre
         subtitle="Browse our premium collection of professionally crafted audio presets for all your production needs."
         backgroundImage="https://images.unsplash.com/photo-1598653222000-6b7b7a552625?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1770&q=80"
         badge={{ text: "PREMIUM PRESETS" }}
-        height="small"
+        height="medium"
         shape="curved"
         customGradient="bg-gradient-to-r from-purple-800/90 to-purple-600/90"
       />
 
       <div className="container mx-auto max-w-7xl px-6 pb-20">
         {/* Enhanced Category Navigation with Icons */}
-        <div className="mb-8 -mt-12 relative z-20">
+        <div className="mb-8 mt-4 relative z-20">
           <div className="bg-white shadow-xl rounded-2xl border border-gray-100 p-5">
-            <div className="flex flex-wrap justify-between items-center">
-              <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap md:justify-between justify-center items-center">
+              <div className="flex flex-wrap justify-center md:justify-start gap-3 w-full md:w-auto">
                 {/* Premium tab */}
                 <button
                   onClick={() => handleTabChange('premium')}
-                  className={`py-3 px-5 rounded-xl font-medium text-lg transition-all flex items-center gap-2 ${
+                  className={`py-3 px-5 rounded-xl font-medium text-lg transition-all flex items-center justify-center gap-2 min-w-[140px] ${
                     activeTab === 'premium'
                       ? 'bg-gradient-to-r from-amber-700 to-amber-600 text-white shadow-lg shadow-amber-300/30 scale-105'
                       : 'text-gray-600 hover:text-amber-600 hover:bg-amber-50'
@@ -601,7 +604,7 @@ function PresetsPage({ onNavigate, onAuthRequired, initialTab = 'premium' }: Pre
                 </button>
                 <button
                   onClick={() => handleTabChange('vocal-chain')}
-                  className={`py-3 px-5 rounded-xl font-medium text-lg transition-all flex items-center gap-2 ${
+                  className={`py-3 px-5 rounded-xl font-medium text-lg transition-all flex items-center justify-center gap-2 min-w-[140px] ${
                     activeTab === 'vocal-chain'
                       ? 'bg-gradient-to-r from-purple-700 to-purple-600 text-white shadow-lg shadow-purple-300/30 scale-105'
                       : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50'
@@ -625,10 +628,10 @@ function PresetsPage({ onNavigate, onAuthRequired, initialTab = 'premium' }: Pre
 
                 <button
                   onClick={() => handleTabChange('instrument')}
-                  className={`py-3 px-5 rounded-xl font-medium text-lg transition-all flex items-center gap-2 ${
+                  className={`py-3 px-5 rounded-xl font-medium text-lg transition-all flex items-center justify-center gap-2 min-w-[140px] ${
                     activeTab === 'instrument'
-                      ? 'bg-gradient-to-r from-green-700 to-green-600 text-white shadow-lg shadow-green-300/30 scale-105'
-                      : 'text-gray-600 hover:text-green-600 hover:bg-green-50'
+                      ? 'bg-gradient-to-r from-blue-700 to-blue-600 text-white shadow-lg shadow-blue-300/30 scale-105'
+                      : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
                   }`}
                   disabled={isLoadingTab && activeTab === 'instrument'}
                 >
@@ -647,25 +650,8 @@ function PresetsPage({ onNavigate, onAuthRequired, initialTab = 'premium' }: Pre
                   )}
                 </button>
               </div>
-              <div className="flex items-center ml-auto mt-3 md:mt-0 space-x-3">
-                <button
-                  onClick={() => onAuthRequired(() => setShowFavoritesOnly(!showFavoritesOnly))}
-                  className={`flex items-center space-x-2 border rounded-lg px-4 py-2 transition-all ${
-                    showFavoritesOnly
-                      ? 'bg-purple-100 border-purple-500 text-purple-700 shadow-md'
-                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <svg
-                    className={`h-5 w-5 ${showFavoritesOnly ? 'text-purple-600' : 'text-gray-500'}`}
-                    fill={showFavoritesOnly ? 'currentColor' : 'none'}
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                  </svg>
-                  <span>Favorites</span>
-                </button>
+              <div className="flex items-center md:ml-auto ml-0 mt-3 md:mt-0 space-x-3 w-full md:w-auto justify-center md:justify-end">
+                {/* Remove favorite button from here - we'll move it to the search results row */}
               </div>
             </div>
           </div>
@@ -758,6 +744,26 @@ function PresetsPage({ onNavigate, onAuthRequired, initialTab = 'premium' }: Pre
                     </button>
                   )}
                 </div>
+
+                {/* Favorites button moved here to be in the same row as search input */}
+                <button
+                  onClick={() => onAuthRequired(() => setShowFavoritesOnly(!showFavoritesOnly))}
+                  className={`flex items-center space-x-2 border rounded-lg px-4 py-2 transition-all ml-auto ${
+                    showFavoritesOnly
+                      ? 'bg-purple-100 border-purple-500 text-purple-700 shadow-md'
+                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <svg
+                    className={`h-5 w-5 ${showFavoritesOnly ? 'text-purple-600' : 'text-gray-500'}`}
+                    fill={showFavoritesOnly ? 'currentColor' : 'none'}
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                  <span>Favorites</span>
+                </button>
               </div>
 
               {/* Filter Dropdowns */}
@@ -991,7 +997,7 @@ function PresetsPage({ onNavigate, onAuthRequired, initialTab = 'premium' }: Pre
                 )}
               </div>
 
-              {/* Filter Results Summary */}
+              {/* Filter Results Summary - Remove favorites button from here */}
               <div className="mt-6 flex items-center justify-between">
                 <p className="text-lg text-left">
                   <span className="font-medium">

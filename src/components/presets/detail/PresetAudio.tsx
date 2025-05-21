@@ -59,14 +59,19 @@ const PresetAudio: React.FC<PresetAudioProps> = ({ preset, presets }) => {
         cancelAnimationFrame(animationFrameRef.current);
       }
 
-      // Start the animation loop
-      animationFrameRef.current = requestAnimationFrame(updateProgressBar);
+      // Start the animation loop immediately for smooth initial update
+      updateProgressBar();
+    } else if (animationFrameRef.current) {
+      // Cancel animation if not playing
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
     }
 
     // Clean up animation frame on unmount or when playingAudio changes
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
       }
     };
   }, [playingAudio, isDragging, audioDuration]);
@@ -282,9 +287,9 @@ const PresetAudio: React.FC<PresetAudioProps> = ({ preset, presets }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* Before Sample */}
-      <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+      <div className="bg-gray-100 rounded-lg p-3 border border-gray-200 shadow-sm">
         <div className="flex items-center mb-3">
-          <h4 className="font-medium text-gray-700 flex-1 text-sm">Before Processing</h4>
+          <h4 className="font-medium text-gray-800 flex-1 text-sm">Before Processing</h4>
           {audioLoadingState.before ? (
             <div className="animate-pulse flex items-center space-x-2">
               <div className="h-2 w-14 bg-gray-300 rounded"></div>
@@ -302,21 +307,21 @@ const PresetAudio: React.FC<PresetAudioProps> = ({ preset, presets }) => {
           <button
             onClick={() => handlePlayAudio(preset.mp3s.before, 'before')}
             disabled={audioLoadingState.before || !preset.mp3s.before}
-            className={`h-8 w-8 rounded-full flex items-center justify-center
+            className={`h-10 w-10 rounded-full flex items-center justify-center
               ${!audioLoadingState.before && preset.mp3s.before ?
                 'bg-purple-600 text-white hover:bg-purple-700' :
                 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
           >
             {!preset.mp3s.before ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
               </svg>
             ) : playingAudio && playingAudio.type === 'before' ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -341,17 +346,20 @@ const PresetAudio: React.FC<PresetAudioProps> = ({ preset, presets }) => {
             className="flex-1 bg-gray-200 h-1.5 rounded-full overflow-hidden"
           >
             <div
-              className="bg-purple-600 h-full transition-all"
-              style={{ width: `${audioProgress.before || 0}%` }}
+              className="bg-purple-600 h-full will-change-transform transform-gpu"
+              style={{
+                width: `${audioProgress.before || 0}%`,
+                transition: 'width 0.1s cubic-bezier(0.4, 0.0, 0.2, 1)'
+              }}
             ></div>
           </div>
         </div>
       </div>
 
       {/* After Sample */}
-      <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+      <div className="bg-gray-100 rounded-lg p-3 border border-gray-200 shadow-sm">
         <div className="flex items-center mb-3">
-          <h4 className="font-medium text-gray-700 flex-1 text-sm">After Processing</h4>
+          <h4 className="font-medium text-gray-800 flex-1 text-sm">After Processing</h4>
           {audioLoadingState.after ? (
             <div className="animate-pulse flex items-center space-x-2">
               <div className="h-2 w-14 bg-gray-300 rounded"></div>
@@ -369,21 +377,21 @@ const PresetAudio: React.FC<PresetAudioProps> = ({ preset, presets }) => {
           <button
             onClick={() => handlePlayAudio(preset.mp3s.after, 'after')}
             disabled={audioLoadingState.after || !preset.mp3s.after}
-            className={`h-8 w-8 rounded-full flex items-center justify-center
+            className={`h-10 w-10 rounded-full flex items-center justify-center
               ${!audioLoadingState.after && preset.mp3s.after ?
                 'bg-green-600 text-white hover:bg-green-700' :
                 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
           >
             {!preset.mp3s.after ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
               </svg>
             ) : playingAudio && playingAudio.type === 'after' ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -408,8 +416,11 @@ const PresetAudio: React.FC<PresetAudioProps> = ({ preset, presets }) => {
             className="flex-1 bg-gray-200 h-1.5 rounded-full overflow-hidden"
           >
             <div
-              className="bg-green-600 h-full transition-all"
-              style={{ width: `${audioProgress.after || 0}%` }}
+              className="bg-green-600 h-full will-change-transform transform-gpu"
+              style={{
+                width: `${audioProgress.after || 0}%`,
+                transition: 'width 0.1s cubic-bezier(0.4, 0.0, 0.2, 1)'
+              }}
             ></div>
           </div>
         </div>

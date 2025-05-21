@@ -113,30 +113,32 @@ const PresetHeader: React.FC<PresetHeaderProps> = ({
         return false;
       }
 
-      // Refresh the credit balance before showing the modal
+      // First refresh the credit balance, then determine which modal to show
       const refreshCredits = async () => {
         if (currentUser) {
           try {
             const creditBalance = await getUserCreditBalance(currentUser.uid);
             setAvailableCredits(creditBalance.available);
+
+            // Now check if user has enough credits AFTER the refresh
+            const hasEnoughCreditsRefreshed = freeRedownload || creditBalance.available >= (preset.credit_cost || 1);
+
+            // Show appropriate modal based on freshly fetched credit balance
+            if (hasEnoughCreditsRefreshed) {
+              setShowConfirmModal(true);
+            } else {
+              setShowInsufficientCreditsModal(true);
+            }
           } catch (error) {
             console.error("Error fetching user credits:", error);
+            // Default to showing insufficient credits modal on error
+            setShowInsufficientCreditsModal(true);
           }
         }
       };
 
-      // Check credits and show appropriate modal
-      if (hasEnoughCredits || freeRedownload) {
-        // Refresh credits first, then show the modal
-        refreshCredits().then(() => {
-          setShowConfirmModal(true);
-        });
-      } else {
-        // Refresh credits first, then show the modal
-        refreshCredits().then(() => {
-          setShowInsufficientCreditsModal(true);
-        });
-      }
+      // Always refresh credits first, then make decision
+      refreshCredits();
 
       return true;
     });
@@ -342,9 +344,9 @@ const PresetHeader: React.FC<PresetHeaderProps> = ({
         tag: 'bg-purple-600/50'
       },
       instrument: {
-        background: 'from-green-700 to-green-600',
-        button: 'bg-green-600 hover:bg-green-700',
-        tag: 'bg-green-600/50'
+        background: 'from-blue-700 to-blue-600',
+        button: 'bg-blue-600 hover:bg-blue-700',
+        tag: 'bg-blue-600/50'
       }
     };
 
@@ -354,7 +356,7 @@ const PresetHeader: React.FC<PresetHeaderProps> = ({
   const colorScheme = getCategoryColorScheme();
 
   return (
-    <div className={`relative overflow-hidden bg-gradient-to-r ${colorScheme.background} pt-20 pb-16 mt-6`}>
+    <div className={`relative overflow-hidden bg-gradient-to-r ${colorScheme.background} pt-24 pb-24 mt-0`}>
       {/* Add subtle pattern overlay */}
       <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
       {/* Add subtle radial gradient for depth */}
@@ -362,6 +364,168 @@ const PresetHeader: React.FC<PresetHeaderProps> = ({
 
       <div className="container mx-auto px-6">
         <div className="max-w-6xl mx-auto">
+          {/* Filter badges above the title */}
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            {/* DAW Filter Badge */}
+            {preset.filters.daw && (
+              <div className="filter-badge-group group/daw relative">
+                <div className="px-3 py-1.5 bg-white/15 backdrop-blur-sm text-white rounded-full text-xs font-medium flex items-center border border-white/10">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                  </svg>
+                  <span className="truncate max-w-[100px]">
+                    {Array.isArray(preset.filters.daw)
+                      ? preset.filters.daw[0]
+                      : preset.filters.daw}
+                  </span>
+                  {Array.isArray(preset.filters.daw) && preset.filters.daw.length > 1 && (
+                    <span className="ml-1 px-1.5 py-0.5 bg-white/20 text-white rounded-full text-[10px] font-semibold flex-shrink-0">
+                      +{preset.filters.daw.length - 1}
+                    </span>
+                  )}
+                </div>
+
+                {/* Tooltip for multiple values */}
+                {Array.isArray(preset.filters.daw) && preset.filters.daw.length > 1 && (
+                  <div className="absolute left-0 top-full mt-2 bg-white rounded-lg shadow-lg p-2 w-max z-10 invisible group-hover/daw:visible opacity-0 group-hover/daw:opacity-100 transition-all duration-200 pointer-events-none">
+                    <div className="text-xs font-medium text-gray-700 mb-1">Compatible DAWs:</div>
+                    <div className="flex flex-wrap gap-1">
+                      {preset.filters.daw.map((daw, index) => (
+                        <span key={index} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-[10px] whitespace-nowrap">
+                          {daw}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="absolute h-2 w-2 bg-white transform rotate-45 left-6 -top-1"></div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Bullet separator */}
+            {(preset.filters.daw && (preset.filters.genre || preset.filters.gender || (preset.filters.plugin && preset.filters.plugin !== 'Any'))) && (
+              <div className="text-white/40 mx-1">|</div>
+            )}
+
+            {/* Genre Filter Badge */}
+            {preset.filters.genre && (
+              <div className="filter-badge-group group/genre relative">
+                <div className="px-3 py-1.5 bg-white/15 backdrop-blur-sm text-white rounded-full text-xs font-medium flex items-center border border-white/10">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                  </svg>
+                  <span className="truncate max-w-[100px]">
+                    {Array.isArray(preset.filters.genre)
+                      ? preset.filters.genre[0]
+                      : preset.filters.genre}
+                  </span>
+                  {Array.isArray(preset.filters.genre) && preset.filters.genre.length > 1 && (
+                    <span className="ml-1 px-1.5 py-0.5 bg-white/20 text-white rounded-full text-[10px] font-semibold flex-shrink-0">
+                      +{preset.filters.genre.length - 1}
+                    </span>
+                  )}
+                </div>
+
+                {/* Tooltip for multiple values */}
+                {Array.isArray(preset.filters.genre) && preset.filters.genre.length > 1 && (
+                  <div className="absolute left-0 top-full mt-2 bg-white rounded-lg shadow-lg p-2 w-max z-10 invisible group-hover/genre:visible opacity-0 group-hover/genre:opacity-100 transition-all duration-200 pointer-events-none">
+                    <div className="text-xs font-medium text-gray-700 mb-1">Genres:</div>
+                    <div className="flex flex-wrap gap-1">
+                      {preset.filters.genre.map((genre, index) => (
+                        <span key={index} className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full text-[10px] whitespace-nowrap">
+                          {genre}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="absolute h-2 w-2 bg-white transform rotate-45 left-6 -top-1"></div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Bullet separator */}
+            {(preset.filters.genre && (preset.filters.gender || (preset.filters.plugin && preset.filters.plugin !== 'Any'))) && (
+              <div className="text-white/40 mx-1">|</div>
+            )}
+
+            {/* Gender/Vocal Type Filter Badge */}
+            {preset.filters.gender && (
+              <div className="filter-badge-group group/gender relative">
+                <div className="px-3 py-1.5 bg-white/15 backdrop-blur-sm text-white rounded-full text-xs font-medium flex items-center border border-white/10">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span className="truncate max-w-[100px]">
+                    {Array.isArray(preset.filters.gender)
+                      ? preset.filters.gender[0]
+                      : preset.filters.gender}
+                  </span>
+                  {Array.isArray(preset.filters.gender) && preset.filters.gender.length > 1 && (
+                    <span className="ml-1 px-1.5 py-0.5 bg-white/20 text-white rounded-full text-[10px] font-semibold flex-shrink-0">
+                      +{preset.filters.gender.length - 1}
+                    </span>
+                  )}
+                </div>
+
+                {/* Tooltip for multiple values */}
+                {Array.isArray(preset.filters.gender) && preset.filters.gender.length > 1 && (
+                  <div className="absolute left-0 top-full mt-2 bg-white rounded-lg shadow-lg p-2 w-max z-10 invisible group-hover/gender:visible opacity-0 group-hover/gender:opacity-100 transition-all duration-200 pointer-events-none">
+                    <div className="text-xs font-medium text-gray-700 mb-1">Vocal Types:</div>
+                    <div className="flex flex-wrap gap-1">
+                      {preset.filters.gender.map((gender, index) => (
+                        <span key={index} className="px-2 py-0.5 bg-green-50 text-green-700 rounded-full text-[10px] whitespace-nowrap">
+                          {gender}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="absolute h-2 w-2 bg-white transform rotate-45 left-6 -top-1"></div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Bullet separator */}
+            {(preset.filters.gender && preset.filters.plugin && preset.filters.plugin !== 'Any') && (
+              <div className="text-white/40 mx-1">|</div>
+            )}
+
+            {/* Plugin Filter Badge */}
+            {preset.filters.plugin && preset.filters.plugin !== 'Any' && (
+              <div className="filter-badge-group group/plugin relative">
+                <div className="px-3 py-1.5 bg-white/15 backdrop-blur-sm text-white rounded-full text-xs font-medium flex items-center border border-white/10">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                  </svg>
+                  <span className="truncate max-w-[100px]">
+                    {Array.isArray(preset.filters.plugin)
+                      ? preset.filters.plugin[0]
+                      : preset.filters.plugin}
+                  </span>
+                  {Array.isArray(preset.filters.plugin) && preset.filters.plugin.length > 1 && (
+                    <span className="ml-1 px-1.5 py-0.5 bg-white/20 text-white rounded-full text-[10px] font-semibold flex-shrink-0">
+                      +{preset.filters.plugin.length - 1}
+                    </span>
+                  )}
+                </div>
+
+                {/* Tooltip for multiple values */}
+                {Array.isArray(preset.filters.plugin) && preset.filters.plugin.length > 1 && (
+                  <div className="absolute left-0 top-full mt-2 bg-white rounded-lg shadow-lg p-2 w-max z-10 invisible group-hover/plugin:visible opacity-0 group-hover/plugin:opacity-100 transition-all duration-200 pointer-events-none">
+                    <div className="text-xs font-medium text-gray-700 mb-1">Plugins:</div>
+                    <div className="flex flex-wrap gap-1">
+                      {preset.filters.plugin.map((plugin, index) => (
+                        <span key={index} className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full text-[10px] whitespace-nowrap">
+                          {plugin}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="absolute h-2 w-2 bg-white transform rotate-45 left-6 -top-1"></div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Title with modern typographic hierarchy */}
           <div className="mb-6">
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight tracking-tight max-w-4xl mb-4">
@@ -371,11 +535,9 @@ const PresetHeader: React.FC<PresetHeaderProps> = ({
               {/* Credit indicator positioned on the left */}
               <div className="flex items-center bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/10">
                 <div className="flex">
-                  {Array.from({ length: credits }).map((_, i) => (
-                    <div key={i} className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center -ml-1 first:ml-0 border border-purple-200">
-                      <span className="text-purple-700 text-xs font-bold">C</span>
-                    </div>
-                  ))}
+                  <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center border border-purple-200">
+                    <span className="text-purple-700 text-xs font-bold">C</span>
+                  </div>
                 </div>
                 <span className="text-white/90 text-sm ml-2">{credits} credit{credits !== 1 ? 's' : ''}</span>
               </div>
@@ -395,7 +557,7 @@ const PresetHeader: React.FC<PresetHeaderProps> = ({
           </div>
 
           {/* Action buttons with reduced top margin */}
-          <div className="flex flex-wrap items-center gap-3 mt-2">
+          <div className="flex flex-wrap items-center gap-3 mt-2 relative z-10">
             {/* Download Button */}
             <button
               onClick={handleDownload}
@@ -474,8 +636,8 @@ const PresetHeader: React.FC<PresetHeaderProps> = ({
       />
 
       {/* Minimal wave shape divider */}
-      <div className="absolute bottom-0 left-0 right-0 overflow-hidden">
-        <div className="relative h-8">
+      <div className="absolute bottom-0 left-0 right-0 overflow-hidden z-0">
+        <div className="relative h-48">
           <svg className="absolute bottom-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 160">
             <path fill="#ffffff" fillOpacity="1" d="M0,96L60,106.7C120,117,240,139,360,128C480,117,600,75,720,64C840,53,960,75,1080,85.3C1200,96,1320,96,1380,96L1440,96L1440,160L1380,160C1320,160,1200,160,1080,160C960,160,840,160,720,160C600,160,480,160,360,160C240,160,120,160,60,160L0,160Z"></path>
           </svg>

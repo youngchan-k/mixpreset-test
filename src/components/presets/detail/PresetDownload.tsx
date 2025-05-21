@@ -172,17 +172,32 @@ const PresetDownload: React.FC<PresetDownloadProps> = ({
         return false;
       }
 
-      // Check credits and show appropriate modal
-      if (hasEnoughCredits || freeRedownload) {
-        // Add a small delay to ensure state updates correctly
-        setTimeout(() => {
-          setShowConfirmModal(true);
-        }, 0);
-      } else {
-        setTimeout(() => {
-          setShowInsufficientCreditsModal(true);
-        }, 0);
-      }
+      // First refresh the credit balance, then determine which modal to show
+      const refreshCredits = async () => {
+        if (currentUser) {
+          try {
+            const creditBalance = await getUserCreditBalance(currentUser.uid);
+            setAvailableCredits(creditBalance.available);
+
+            // Now check if user has enough credits AFTER the refresh
+            const hasEnoughCreditsRefreshed = freeRedownload || creditBalance.available >= (preset.credit_cost || 1);
+
+            // Show appropriate modal based on freshly fetched credit balance
+            if (hasEnoughCreditsRefreshed) {
+              setShowConfirmModal(true);
+            } else {
+              setShowInsufficientCreditsModal(true);
+            }
+          } catch (error) {
+            console.error("Error fetching user credits:", error);
+            // Default to showing insufficient credits modal on error
+            setShowInsufficientCreditsModal(true);
+          }
+        }
+      };
+
+      // Always refresh credits first, then make decision
+      refreshCredits();
 
       return true;
     });

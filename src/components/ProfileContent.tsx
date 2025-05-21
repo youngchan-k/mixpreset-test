@@ -110,15 +110,17 @@ const ProfileContent = () => {
                           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
                         </div>
                       ) : user.profileImage ? (
-                        <Image
-                          src={user.profileImage}
-                          alt="Profile"
-                          fill
-                          sizes="96px"
-                          loading="eager"
-                          className="rounded-full"
-                          style={{objectFit: 'cover'}}
-                        />
+                        <div className="w-full h-full rounded-full">
+                          <Image
+                            src={user.profileImage}
+                            alt="Profile"
+                            fill
+                            sizes="96px"
+                            loading="eager"
+                            className="rounded-full"
+                            style={{objectFit: 'cover'}}
+                          />
+                        </div>
                       ) : (
                         <div className="w-full h-full bg-purple-600 flex items-center justify-center rounded-full">
                           <span className="text-2xl font-bold text-white">{user.name ? user.name.charAt(0) : ''}</span>
