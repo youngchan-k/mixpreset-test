@@ -25,6 +25,17 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Navbar underline hover effect */
+.nav-underline {
+  width: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+a:hover .nav-underline {
+  width: 100% !important;
+}
+
 @layer components {
   .container {
     @apply max-w-7xl mx-auto px-4 sm:px-6 md:px-8;

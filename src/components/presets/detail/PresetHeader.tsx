@@ -334,17 +334,17 @@ const PresetHeader: React.FC<PresetHeaderProps> = ({
   const getCategoryColorScheme = () => {
     const colorSchemes = {
       premium: {
-        background: 'from-amber-700 to-amber-600',
+        background: 'from-amber-800/90 to-amber-600/90',
         button: 'bg-amber-600 hover:bg-amber-700',
         tag: 'bg-amber-600/50'
       },
       vocal_chain: {
-        background: 'from-purple-700 to-purple-600',
+        background: 'from-purple-800/90 to-purple-600/90',
         button: 'bg-purple-600 hover:bg-purple-700',
         tag: 'bg-purple-600/50'
       },
       instrument: {
-        background: 'from-blue-700 to-blue-600',
+        background: 'from-blue-800/90 to-blue-600/90',
         button: 'bg-blue-600 hover:bg-blue-700',
         tag: 'bg-blue-600/50'
       }

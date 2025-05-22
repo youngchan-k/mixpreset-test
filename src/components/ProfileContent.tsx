@@ -104,7 +104,7 @@ const ProfileContent = () => {
                 {/* Profile Summary */}
                 <div className="md:w-1/3 mb-6 md:mb-0 flex flex-col items-center justify-center">
                   <div className="flex flex-row items-center mb-6 w-full max-w-xs">
-                    <div className="w-24 h-24 rounded-full bg-gray-200 overflow-hidden mr-4 relative">
+                    <div className="w-24 h-24 rounded-full bg-gray-200 overflow-hidden mr-4 relative" style={{aspectRatio: '1/1'}}>
                       {isLoadingProfile ? (
                         <div className="w-full h-full bg-purple-300 flex items-center justify-center rounded-full">
                           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>

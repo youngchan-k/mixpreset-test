@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { hasAdminAccess } from '@/lib/permissions';
+import React from 'react';
 
 // Helper function to extract username from email
 const getUsernameFromEmail = (email: string | null | undefined): string => {
@@ -26,18 +27,84 @@ const getUserInitials = (displayName: string | null | undefined, email: string |
   return 'U';
 };
 
+// Custom hook for detecting scroll
+function useScrollPosition() {
+  const [scrollPosition, setScrollPosition] = useState(0);
+
+  // Function to update scroll position - handle all browser compatibility issues
+  const updatePosition = useCallback(() => {
+    const position = window.pageYOffset ||
+                     window.scrollY ||
+                     document.documentElement.scrollTop ||
+                     document.body.scrollTop ||
+                     0;
+
+    setScrollPosition(position);
+    console.log('Scroll position updated:', position);
+  }, []);
+
+  useEffect(() => {
+    console.log('Setting up useScrollPosition hook');
+
+    // Update position immediately
+    updatePosition();
+
+    // Add scroll event to multiple elements to ensure it works
+    window.addEventListener('scroll', updatePosition, { passive: true });
+    document.addEventListener('scroll', updatePosition, { passive: true });
+    console.log('Added scroll event listeners');
+
+    // Add resize event
+    window.addEventListener('resize', updatePosition, { passive: true });
+
+    // Manual polling as a backup
+    const intervalId = setInterval(() => {
+      const currentPosition = window.pageYOffset ||
+                             window.scrollY ||
+                             document.documentElement.scrollTop ||
+                             document.body.scrollTop ||
+                             0;
+
+      if (Math.abs(currentPosition - scrollPosition) > 5) { // Only update if significant change
+        console.log('Interval update - position changed from', scrollPosition, 'to', currentPosition);
+        setScrollPosition(currentPosition);
+      }
+    }, 250); // Check more frequently
+
+    return () => {
+      window.removeEventListener('scroll', updatePosition);
+      document.removeEventListener('scroll', updatePosition);
+      window.removeEventListener('resize', updatePosition);
+      clearInterval(intervalId);
+    };
+  }, [updatePosition, scrollPosition]);
+
+  return scrollPosition;
+}
+
 interface NavbarProps {
   isAuthenticated?: boolean;
   onLogout?: () => void;
 }
 
 export default function Navbar({ isAuthenticated: propIsAuthenticated, onLogout: propOnLogout }: NavbarProps) {
+  const scrollPosition = useScrollPosition();
   const [isOpen, setIsOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
   const [hasAdmin, setHasAdmin] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { currentUser, logout, googleSignIn } = useAuth();
+
+  // Add navbar ref for direct manipulation if needed
+  const navbarRef = useRef<HTMLDivElement>(null);
+
+  // Check if current page is an auth page (login, signup, forgot-password)
+  const isAuthPage = pathname?.includes('/login') ||
+                    pathname?.includes('/signup') ||
+                    pathname?.includes('/forgot-password');
+
+  // Determine if navbar should be scrolled based on position
+  const isScrolled = scrollPosition > 10;
 
   // Use context values if available, otherwise use props
   const isAuthenticated = currentUser !== null || propIsAuthenticated;
@@ -51,6 +118,32 @@ export default function Navbar({ isAuthenticated: propIsAuthenticated, onLogout:
     }
   };
 
+  // Function to force update navbar style
+  const forceUpdateNavStyle = useCallback(() => {
+    if (!navbarRef.current) return;
+
+    const scrollPos = window.pageYOffset ||
+                     window.scrollY ||
+                     document.documentElement.scrollTop ||
+                     document.body.scrollTop ||
+                     0;
+
+    const shouldBeScrolled = scrollPos > 10 || isAuthPage;
+
+    if (shouldBeScrolled) {
+      navbarRef.current.style.backgroundColor = 'white';
+      navbarRef.current.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
+    } else {
+      navbarRef.current.style.backgroundColor = 'transparent';
+      navbarRef.current.style.boxShadow = 'none';
+    }
+  }, [isAuthPage]);
+
+  // Force update style on mount, route change, and scrolled state change
+  useEffect(() => {
+    forceUpdateNavStyle();
+  }, [forceUpdateNavStyle, isScrolled, pathname]);
+
   // Check user permissions when currentUser changes
   useEffect(() => {
     if (currentUser) {
@@ -60,42 +153,6 @@ export default function Navbar({ isAuthenticated: propIsAuthenticated, onLogout:
     }
   }, [currentUser]);
 
-  // Check if current page is an auth page (login, signup, forgot-password)
-  const isAuthPage = pathname?.includes('/login') ||
-                    pathname?.includes('/signup') ||
-                    pathname?.includes('/forgot-password');
-
-  // Improved scroll detection logic
-  useEffect(() => {
-    const checkScroll = () => {
-      // Only run on the client side
-      if (typeof window !== 'undefined') {
-        // Set initial scroll state when component mounts
-        setIsScrolled(window.scrollY > 10);
-
-        const handleScroll = () => {
-          // Simple threshold-based detection
-          if (window.scrollY > 10) {
-            setIsScrolled(true);
-          } else {
-            setIsScrolled(false);
-          }
-        };
-
-        // Passive: true improves scroll performance
-        window.addEventListener('scroll', handleScroll, { passive: true });
-
-        // Clean up
-        return () => {
-          window.removeEventListener('scroll', handleScroll);
-        };
-      }
-    };
-
-    // Run the check
-    checkScroll();
-  }, []);
-
   // Extract username from email if displayName is not available
   const displayName = currentUser?.displayName || (currentUser?.email ? getUsernameFromEmail(currentUser.email) : 'User');
   // Get user initials for avatar
@@ -103,12 +160,14 @@ export default function Navbar({ isAuthenticated: propIsAuthenticated, onLogout:
 
   return (
     <nav
-      className={`fixed w-full z-50 transition-all duration-300 py-3 ${
+      ref={navbarRef}
+      className={`fixed w-full z-50 py-3 ${
         isScrolled || isAuthPage ? 'bg-white shadow-md' : 'bg-transparent'
       }`}
       style={{
-        backgroundColor: isScrolled || isAuthPage ? 'white' : 'transparent',
-        boxShadow: isScrolled || isAuthPage ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' : 'none'
+        backgroundColor: (isScrolled || isAuthPage) ? 'white' : 'transparent',
+        boxShadow: (isScrolled || isAuthPage) ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' : 'none',
+        transition: 'background-color 0.4s ease, box-shadow 0.4s ease'
       }}
     >
       <div className="container mx-auto px-4">
@@ -128,59 +187,148 @@ export default function Navbar({ isAuthenticated: propIsAuthenticated, onLogout:
           <div className="hidden md:flex items-center space-x-10">
             <Link
               href="/"
-              className={`text-base border-b-2 ${
+              className={`text-base relative ${
                 pathname === '/'
-                  ? (isScrolled || isAuthPage ? 'border-purple-600 text-gray-900' : 'border-white text-white')
-                  : (isScrolled || isAuthPage ? 'border-transparent text-gray-900 hover:text-purple-700 hover:border-purple-600' : 'border-transparent text-white hover:text-purple-200 hover:border-white')
-              } transition-colors pb-1 ${pathname === '/' ? 'font-medium' : ''}`}
+                  ? (isScrolled || isAuthPage ? 'text-gray-900' : 'text-white')
+                  : (isScrolled || isAuthPage ? 'text-gray-900 hover:text-purple-700' : 'text-white hover:text-purple-200')
+              } pb-1 ${pathname === '/' ? 'font-medium' : ''}`}
               style={{
                 color: isScrolled || isAuthPage ? '#111827' : 'white',
-                borderBottomColor: pathname === '/'
-                  ? (isScrolled || isAuthPage ? '#9333ea' : 'white')
-                  : 'transparent'
+                transition: 'color 0.4s ease',
+                paddingBottom: '4px'
               }}
             >
               Home
+              <span
+                style={{
+                  position: 'absolute',
+                  background: isScrolled || isAuthPage ? '#9333ea' : 'white',
+                  height: '2px',
+                  bottom: '-1px',
+                  width: pathname === '/' ? '100%' : '0',
+                  transition: 'width 0.3s ease',
+                  opacity: '1',
+                  left: pathname === '/' ? '0' : '50%',
+                  transform: pathname === '/' ? 'none' : 'translateX(-50%)'
+                }}
+                className="nav-underline"
+              ></span>
             </Link>
             <Link
               href="/presets"
-              className={`text-base border-b-2 ${
+              className={`text-base relative ${
                 pathname?.startsWith('/presets')
-                  ? (isScrolled || isAuthPage ? 'border-purple-600 text-gray-900' : 'border-white text-white')
-                  : (isScrolled || isAuthPage ? 'border-transparent text-gray-900 hover:text-purple-700 hover:border-purple-600' : 'border-transparent text-white hover:text-purple-200 hover:border-white')
-              } transition-colors pb-1 ${pathname?.startsWith('/presets') ? 'font-medium' : ''}`}
+                  ? (isScrolled || isAuthPage ? 'text-gray-900' : 'text-white')
+                  : (isScrolled || isAuthPage ? 'text-gray-900 hover:text-purple-700' : 'text-white hover:text-purple-200')
+              } pb-1 ${pathname?.startsWith('/presets') ? 'font-medium' : ''}`}
+              style={{
+                color: isScrolled || isAuthPage ? '#111827' : 'white',
+                transition: 'color 0.4s ease',
+                paddingBottom: '4px'
+              }}
             >
               Presets
+              <span
+                style={{
+                  position: 'absolute',
+                  background: isScrolled || isAuthPage ? '#9333ea' : 'white',
+                  height: '2px',
+                  bottom: '-1px',
+                  width: pathname?.startsWith('/presets') ? '100%' : '0',
+                  transition: 'width 0.3s ease',
+                  opacity: '1',
+                  left: pathname?.startsWith('/presets') ? '0' : '50%',
+                  transform: pathname?.startsWith('/presets') ? 'none' : 'translateX(-50%)'
+                }}
+                className="nav-underline"
+              ></span>
             </Link>
             <Link
               href="/community"
-              className={`text-base border-b-2 ${
+              className={`text-base relative ${
                 pathname?.startsWith('/community')
-                  ? (isScrolled || isAuthPage ? 'border-purple-600 text-gray-900' : 'border-white text-white')
-                  : (isScrolled || isAuthPage ? 'border-transparent text-gray-900 hover:text-purple-700 hover:border-purple-600' : 'border-transparent text-white hover:text-purple-200 hover:border-white')
-              } transition-colors pb-1 ${pathname?.startsWith('/community') ? 'font-medium' : ''}`}
+                  ? (isScrolled || isAuthPage ? 'text-gray-900' : 'text-white')
+                  : (isScrolled || isAuthPage ? 'text-gray-900 hover:text-purple-700' : 'text-white hover:text-purple-200')
+              } pb-1 ${pathname?.startsWith('/community') ? 'font-medium' : ''}`}
+              style={{
+                color: isScrolled || isAuthPage ? '#111827' : 'white',
+                transition: 'color 0.4s ease',
+                paddingBottom: '4px'
+              }}
             >
               Community
+              <span
+                style={{
+                  position: 'absolute',
+                  background: isScrolled || isAuthPage ? '#9333ea' : 'white',
+                  height: '2px',
+                  bottom: '-1px',
+                  width: pathname?.startsWith('/community') ? '100%' : '0',
+                  transition: 'width 0.3s ease',
+                  opacity: '1',
+                  left: pathname?.startsWith('/community') ? '0' : '50%',
+                  transform: pathname?.startsWith('/community') ? 'none' : 'translateX(-50%)'
+                }}
+                className="nav-underline"
+              ></span>
             </Link>
             <Link
               href="/courses"
-              className={`text-base border-b-2 ${
+              className={`text-base relative ${
                 pathname?.startsWith('/courses')
-                  ? (isScrolled || isAuthPage ? 'border-purple-600 text-gray-900' : 'border-white text-white')
-                  : (isScrolled || isAuthPage ? 'border-transparent text-gray-900 hover:text-purple-700 hover:border-purple-600' : 'border-transparent text-white hover:text-purple-200 hover:border-white')
-              } transition-colors pb-1 ${pathname?.startsWith('/courses') ? 'font-medium' : ''}`}
+                  ? (isScrolled || isAuthPage ? 'text-gray-900' : 'text-white')
+                  : (isScrolled || isAuthPage ? 'text-gray-900 hover:text-purple-700' : 'text-white hover:text-purple-200')
+              } pb-1 ${pathname?.startsWith('/courses') ? 'font-medium' : ''}`}
+              style={{
+                color: isScrolled || isAuthPage ? '#111827' : 'white',
+                transition: 'color 0.4s ease',
+                paddingBottom: '4px'
+              }}
             >
               Courses
+              <span
+                style={{
+                  position: 'absolute',
+                  background: isScrolled || isAuthPage ? '#9333ea' : 'white',
+                  height: '2px',
+                  bottom: '-1px',
+                  width: pathname?.startsWith('/courses') ? '100%' : '0',
+                  transition: 'width 0.3s ease',
+                  opacity: '1',
+                  left: pathname?.startsWith('/courses') ? '0' : '50%',
+                  transform: pathname?.startsWith('/courses') ? 'none' : 'translateX(-50%)'
+                }}
+                className="nav-underline"
+              ></span>
             </Link>
             <Link
               href="/pricing"
-              className={`text-base border-b-2 ${
+              className={`text-base relative ${
                 pathname?.startsWith('/pricing')
-                  ? (isScrolled || isAuthPage ? 'border-purple-600 text-gray-900' : 'border-white text-white')
-                  : (isScrolled || isAuthPage ? 'border-transparent text-gray-900 hover:text-purple-700 hover:border-purple-600' : 'border-transparent text-white hover:text-purple-200 hover:border-white')
-              } transition-colors pb-1 ${pathname?.startsWith('/pricing') ? 'font-medium' : ''}`}
+                  ? (isScrolled || isAuthPage ? 'text-gray-900' : 'text-white')
+                  : (isScrolled || isAuthPage ? 'text-gray-900 hover:text-purple-700' : 'text-white hover:text-purple-200')
+              } pb-1 ${pathname?.startsWith('/pricing') ? 'font-medium' : ''}`}
+              style={{
+                color: isScrolled || isAuthPage ? '#111827' : 'white',
+                transition: 'color 0.4s ease',
+                paddingBottom: '4px'
+              }}
             >
               Pricing
+              <span
+                style={{
+                  position: 'absolute',
+                  background: isScrolled || isAuthPage ? '#9333ea' : 'white',
+                  height: '2px',
+                  bottom: '-1px',
+                  width: pathname?.startsWith('/pricing') ? '100%' : '0',
+                  transition: 'width 0.3s ease',
+                  opacity: '1',
+                  left: pathname?.startsWith('/pricing') ? '0' : '50%',
+                  transform: pathname?.startsWith('/pricing') ? 'none' : 'translateX(-50%)'
+                }}
+                className="nav-underline"
+              ></span>
             </Link>
             {/* <Link
               href="/blog"
@@ -194,13 +342,32 @@ export default function Navbar({ isAuthenticated: propIsAuthenticated, onLogout:
             </Link> */}
             <Link
               href="/faq"
-              className={`text-base border-b-2 ${
+              className={`text-base relative ${
                 pathname?.startsWith('/faq')
-                  ? (isScrolled || isAuthPage ? 'border-purple-600 text-gray-900' : 'border-white text-white')
-                  : (isScrolled || isAuthPage ? 'border-transparent text-gray-900 hover:text-purple-700 hover:border-purple-600' : 'border-transparent text-white hover:text-purple-200 hover:border-white')
-              } transition-colors pb-1 ${pathname?.startsWith('/faq') ? 'font-medium' : ''}`}
+                  ? (isScrolled || isAuthPage ? 'text-gray-900' : 'text-white')
+                  : (isScrolled || isAuthPage ? 'text-gray-900 hover:text-purple-700' : 'text-white hover:text-purple-200')
+              } pb-1 ${pathname?.startsWith('/faq') ? 'font-medium' : ''}`}
+              style={{
+                color: isScrolled || isAuthPage ? '#111827' : 'white',
+                transition: 'color 0.4s ease',
+                paddingBottom: '4px'
+              }}
             >
               FAQ
+              <span
+                style={{
+                  position: 'absolute',
+                  background: isScrolled || isAuthPage ? '#9333ea' : 'white',
+                  height: '2px',
+                  bottom: '-1px',
+                  width: pathname?.startsWith('/faq') ? '100%' : '0',
+                  transition: 'width 0.3s ease',
+                  opacity: '1',
+                  left: pathname?.startsWith('/faq') ? '0' : '50%',
+                  transform: pathname?.startsWith('/faq') ? 'none' : 'translateX(-50%)'
+                }}
+                className="nav-underline"
+              ></span>
             </Link>
           </div>
 
@@ -211,7 +378,10 @@ export default function Navbar({ isAuthenticated: propIsAuthenticated, onLogout:
                 <button
                   className={`flex items-center space-x-2 text-base ${
                     isScrolled || isAuthPage ? 'text-gray-900 hover:text-purple-700' : 'text-white hover:text-purple-200'
-                  } transition-colors`}
+                  }`}
+                  style={{
+                    transition: 'color 0.4s ease'
+                  }}
                 >
                   <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center overflow-hidden">
                     {currentUser?.photoURL ? (
@@ -308,23 +478,45 @@ export default function Navbar({ isAuthenticated: propIsAuthenticated, onLogout:
               <>
                 <Link
                   href="/login"
-                  className={`text-base border-b-2 ${
+                  className={`text-base relative ${
                     pathname?.startsWith('/login')
-                      ? (isScrolled || isAuthPage ? 'border-purple-600 text-gray-900' : 'border-white text-white')
-                      : (isScrolled || isAuthPage ? 'border-transparent text-gray-900 hover:text-purple-700 hover:border-purple-600' : 'border-transparent text-white hover:text-purple-200 hover:border-white')
-                  } transition-colors pb-1 ${pathname?.startsWith('/login') ? 'font-medium' : ''}`}
+                      ? (isScrolled || isAuthPage ? 'text-gray-900' : 'text-white')
+                      : (isScrolled || isAuthPage ? 'text-gray-900 hover:text-purple-700' : 'text-white hover:text-purple-200')
+                  } pb-1 ${pathname?.startsWith('/login') ? 'font-medium' : ''}`}
                   onClick={() => setIsOpen(false)}
+                  style={{
+                    color: isScrolled || isAuthPage ? '#111827' : 'white',
+                    transition: 'color 0.4s ease',
+                    paddingBottom: '4px'
+                  }}
                 >
                   Login
+                  <span
+                    style={{
+                      position: 'absolute',
+                      background: isScrolled || isAuthPage ? '#9333ea' : 'white',
+                      height: '2px',
+                      bottom: '-1px',
+                      width: pathname?.startsWith('/login') ? '100%' : '0',
+                      transition: 'width 0.3s ease',
+                      opacity: '1',
+                      left: pathname?.startsWith('/login') ? '0' : '50%',
+                      transform: pathname?.startsWith('/login') ? 'none' : 'translateX(-50%)'
+                    }}
+                    className="nav-underline"
+                  ></span>
                 </Link>
                 <Link
                   href="/signup"
-                  className={`text-base px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors ${
+                  className={`text-base px-4 py-2 rounded-md hover:bg-opacity-90 ${
                     isScrolled || isAuthPage
                       ? 'bg-purple-600 text-white hover:bg-purple-700'
                       : 'bg-white text-purple-700 hover:bg-gray-100'
                   } ${pathname?.startsWith('/signup') ? 'bg-purple-700' : ''}`}
                   onClick={() => setIsOpen(false)}
+                  style={{
+                    transition: 'background-color 0.4s ease, color 0.4s ease'
+                  }}
                 >
                   Sign Up
                 </Link>
@@ -339,6 +531,9 @@ export default function Navbar({ isAuthenticated: propIsAuthenticated, onLogout:
               className={`${
                 isScrolled || isAuthPage ? 'text-gray-900' : 'text-white'
               } focus:outline-none`}
+              style={{
+                transition: 'color 0.4s ease'
+              }}
             >
               {isOpen ? (
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -355,54 +550,76 @@ export default function Navbar({ isAuthenticated: propIsAuthenticated, onLogout:
 
         {/* Mobile Menu */}
         {isOpen && (
-          <div className="md:hidden mt-2 py-3 bg-white rounded-lg shadow-lg">
+          <div className="md:hidden mt-2 py-3 bg-white rounded-lg shadow-lg"
+               style={{
+                 animation: 'fadeIn 0.3s ease-out',
+                 transformOrigin: 'top center'
+               }}>
             <div className="flex flex-col space-y-3 px-4">
               <Link
                 href="/"
-                className="text-base text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
+                className="text-base text-gray-900 hover:text-purple-700 border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
                 onClick={() => setIsOpen(false)}
+                style={{
+                  transition: 'color 0.3s ease, border-color 0.3s ease'
+                }}
               >
                 Home
               </Link>
               <Link
                 href="/presets"
-                className="text-base text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
+                className="text-base text-gray-900 hover:text-purple-700 border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
                 onClick={() => setIsOpen(false)}
+                style={{
+                  transition: 'color 0.3s ease, border-color 0.3s ease'
+                }}
               >
                 Presets
               </Link>
               <Link
                 href="/community"
-                className="text-base text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
+                className="text-base text-gray-900 hover:text-purple-700 border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
                 onClick={() => setIsOpen(false)}
+                style={{
+                  transition: 'color 0.3s ease, border-color 0.3s ease'
+                }}
               >
                 Community
               </Link>
               <Link
                 href="/courses"
-                className="text-base text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
+                className="text-base text-gray-900 hover:text-purple-700 border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
                 onClick={() => setIsOpen(false)}
+                style={{
+                  transition: 'color 0.3s ease, border-color 0.3s ease'
+                }}
               >
                 Courses
               </Link>
               <Link
                 href="/pricing"
-                className="text-base text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
+                className="text-base text-gray-900 hover:text-purple-700 border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
                 onClick={() => setIsOpen(false)}
+                style={{
+                  transition: 'color 0.3s ease, border-color 0.3s ease'
+                }}
               >
                 Pricing
               </Link>
               {/* <Link
                 href="/blog"
-                className="text-base text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
+                className="text-base text-gray-900 hover:text-purple-700 border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
                 onClick={() => setIsOpen(false)}
               >
                 Blog
               </Link> */}
               <Link
                 href="/faq"
-                className="text-base text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
+                className="text-base text-gray-900 hover:text-purple-700 border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
                 onClick={() => setIsOpen(false)}
+                style={{
+                  transition: 'color 0.3s ease, border-color 0.3s ease'
+                }}
               >
                 FAQ
               </Link>
@@ -411,16 +628,22 @@ export default function Navbar({ isAuthenticated: propIsAuthenticated, onLogout:
                 <>
                   <Link
                     href="/profile"
-                    className="text-base text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
+                    className="text-base text-gray-900 hover:text-purple-700 border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
                     onClick={() => setIsOpen(false)}
+                    style={{
+                      transition: 'color 0.3s ease, border-color 0.3s ease'
+                    }}
                   >
                     Profile
                   </Link>
 
                   <Link
                     href="/profile/settings"
-                    className="text-base text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
+                    className="text-base text-gray-900 hover:text-purple-700 border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
                     onClick={() => setIsOpen(false)}
+                    style={{
+                      transition: 'color 0.3s ease, border-color 0.3s ease'
+                    }}
                   >
                     Account Settings
                   </Link>
@@ -429,8 +652,11 @@ export default function Navbar({ isAuthenticated: propIsAuthenticated, onLogout:
                   {hasAdmin && (
                     <Link
                       href="/admin"
-                      className="text-base text-purple-700 hover:text-purple-900 transition-colors font-medium border-l-4 border-purple-600 pl-3 py-1.5"
+                      className="text-base text-purple-700 hover:text-purple-900 font-medium border-l-4 border-purple-600 pl-3 py-1.5"
                       onClick={() => setIsOpen(false)}
+                      style={{
+                        transition: 'color 0.3s ease, border-color 0.3s ease'
+                      }}
                     >
                       Admin
                     </Link>
@@ -440,7 +666,10 @@ export default function Navbar({ isAuthenticated: propIsAuthenticated, onLogout:
                     onClick={(e) => {
                       onLogout();
                     }}
-                    className="text-base text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5 text-left w-full"
+                    className="text-base text-gray-900 hover:text-purple-700 border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5 text-left w-full"
+                    style={{
+                      transition: 'color 0.3s ease, border-color 0.3s ease'
+                    }}
                   >
                     Logout
                   </button>
@@ -449,15 +678,34 @@ export default function Navbar({ isAuthenticated: propIsAuthenticated, onLogout:
                 <>
                   <Link
                     href="/login"
-                    className="text-base text-gray-900 hover:text-purple-700 transition-colors border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5"
+                    className={`text-base text-gray-900 hover:text-purple-700 border-l-4 border-transparent hover:border-purple-600 pl-3 py-1.5`}
                     onClick={() => setIsOpen(false)}
+                    style={{
+                      transition: 'color 0.3s ease, border-color 0.3s ease'
+                    }}
                   >
                     Login
+                    <span
+                      style={{
+                        position: 'absolute',
+                        background: isScrolled || isAuthPage ? '#9333ea' : 'white',
+                        opacity: pathname?.startsWith('/login') ? '1' : '0',
+                        width: pathname?.startsWith('/login') ? '100%' : '0%',
+                        height: '2px',
+                        bottom: '-1px',
+                        left: '0',
+                        transition: 'width 0.3s ease, opacity 0.3s ease'
+                      }}
+                      className="absolute bottom-0 left-0 w-0 group-hover:w-full"
+                    ></span>
                   </Link>
                   <Link
                     href="/signup"
-                    className="text-base bg-purple-600 text-white px-5 py-2.5 rounded-md hover:bg-purple-700 transition-colors text-center mt-3"
+                    className="text-base bg-purple-600 text-white px-5 py-2.5 rounded-md hover:bg-purple-700 text-center mt-3"
                     onClick={() => setIsOpen(false)}
+                    style={{
+                      transition: 'background-color 0.3s ease, color 0.3s ease'
+                    }}
                   >
                     Sign Up
                   </Link>

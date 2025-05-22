@@ -418,7 +418,7 @@ export default function SettingsPage() {
                     <div className="md:w-1/3 mb-6 md:mb-0 flex flex-col items-center">
                       {/* Profile Image */}
                       <div className="mb-8 text-center">
-                        <div className="w-32 h-32 mx-auto relative border-4 border-white shadow-lg rounded-full overflow-hidden">
+                        <div className="w-32 h-32 mx-auto relative border-4 border-white shadow-lg rounded-full overflow-hidden" style={{aspectRatio: '1/1'}}>
                           {isLoadingProfile ? (
                             <div className="w-full h-full bg-purple-300 flex items-center justify-center rounded-full">
                               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>

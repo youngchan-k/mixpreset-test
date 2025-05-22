@@ -127,7 +127,7 @@ const PresetSync = ({
       }
 
       // Fetch each preset's data in parallel
-      const presetPromises = presetFolders.map(folder => fetchPresetData(folder, category));
+      const presetPromises = presetFolders.map(folderInfo => fetchPresetData(folderInfo, category));
       const presets = (await Promise.all(presetPromises)).filter(Boolean) as Preset[];
 
       // Store the results
@@ -168,7 +168,7 @@ const PresetSync = ({
         const presetFolders = await discoverFolders(category);
         if (!presetFolders.length) return [];
 
-        const presetPromises = presetFolders.map(folder => fetchPresetData(folder, category));
+        const presetPromises = presetFolders.map(folderInfo => fetchPresetData(folderInfo, category));
         return (await Promise.all(presetPromises)).filter(Boolean) as Preset[];
       });
 
@@ -207,7 +207,7 @@ const PresetSync = ({
   };
 
   // Helper to discover preset folders in a category
-  const discoverFolders = async (category: string): Promise<string[]> => {
+  const discoverFolders = async (category: string): Promise<{path: string}[]> => {
     try {
       // First try to check if an index file exists
       const indexUrl = `https://${presetS3Url}/index.json`;
@@ -218,11 +218,10 @@ const PresetSync = ({
           const indexData = await indexResponse.json();
 
           if (indexData[category] && Array.isArray(indexData[category])) {
-            return indexData[category].map((preset: string | { id: string }) => {
-              const folderName = typeof preset === 'string' ? preset : preset.id;
-              // Keep original folderName for path (no encoding yet, as we'll encode when constructing URLs)
-              return `${category}/${folderName}/`;
-            });
+            // Simplified: all entries in index.json are just strings
+            return indexData[category].map((presetName: string) => ({
+              path: `${category}/${presetName}/`
+            }));
           }
         }
       } catch (error) {
@@ -241,7 +240,8 @@ const PresetSync = ({
           if (folderMatches) {
             return folderMatches
               .map(match => match.replace(/<Key>|<\/Key>/g, ''))
-              .filter(folder => folder.startsWith(`${category}/`) && folder.endsWith('/'));
+              .filter(folder => folder.startsWith(`${category}/`) && folder.endsWith('/'))
+              .map(path => ({ path }));
           }
         }
       } catch (error) {
@@ -256,13 +256,15 @@ const PresetSync = ({
   };
 
   // Helper to fetch a single preset's data
-  const fetchPresetData = async (folderPath: string, category: string): Promise<Preset | null> => {
+  const fetchPresetData = async (folderInfo: {path: string}, category: string): Promise<Preset | null> => {
     try {
+      const folderPath = folderInfo.path;
+
       // Extract preset name from folder path
       const presetName = folderPath.split('/')[1];
       if (!presetName) return null;
 
-      // Create basic preset structure
+      // Create basic preset structure - simplified ID derivation
       const presetId = presetName.replace(/_+/g, ' ');
       let presetData: Preset = {
         id: presetId,
