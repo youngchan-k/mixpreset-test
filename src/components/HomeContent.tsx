@@ -14,10 +14,10 @@ export default function HomeContent({ onNavigate }: HomePageProps) {
     <div className="bg-white">
       <HeroSection
         title="Worldwide Mixing and Mastering Platform"
-        subtitle="Connect with skilled engineers worldwide to elevate your sound with professional mixing, mastering and premium preset collections"
+        subtitle="Connect with authentic sound engineers worldwide, and get instant access to numerous presets ACTUALLY used in billboard songs "
         titleGradient={true}
-        badge={{ text: "#1 GLOBAL AUDIO PLATFORM" }}
-        showWaveAnimation={true}
+        badge={{ text: "#1 GLOBAL Mixing PLATFORM" }}
+        showWaveAnimation={false}
         showSocialProof={true}
         socialProofText="Trusted by music professionals and leading studios worldwide"
         height="large"
@@ -54,7 +54,7 @@ export default function HomeContent({ onNavigate }: HomePageProps) {
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold text-gray-800 mb-4">Why Choose MIXPRESET</h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Our presets are crafted by industry professionals to help you achieve studio-quality sound with just a few clicks.
+          We are not an independent preset seller, we are a platform that sells authentic presets from grammy nominated albums to billboard albums.
           </p>
         </div>
 
@@ -168,7 +168,7 @@ export default function HomeContent({ onNavigate }: HomePageProps) {
             <div className="md:w-1/2 mb-10 md:mb-0 md:pr-12">
               <h2 className="text-4xl font-bold text-gray-800 mb-6 leading-tight">Premium Audio <span className="text-purple-600">Presets</span></h2>
               <p className="text-base leading-relaxed text-gray-600 mb-8">
-                Browse our extensive library of professional presets for vocals, instruments, and full mixes. Each preset is meticulously crafted to give you that polished, radio-ready sound.
+              Browse our extensive presets for vocals and instruments that were used in grammy nominated songs and billboard hit songs. We have partnered with professionals who have worked with Dua Lipa, Blackpink, Bad Bunny, Shakira, Aespa and more.
               </p>
               <ul className="space-y-5 mb-10">
                 <li className="flex items-center">
@@ -368,7 +368,7 @@ export default function HomeContent({ onNavigate }: HomePageProps) {
       </div>
 
       {/* Testimonials Section */}
-      <div className="py-24 bg-white">
+      {/* <div className="py-24 bg-white">
         <div className="container mx-auto px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-800 mb-6"><span className="text-purple-600">What</span> Our Customers Say</h2>
@@ -378,7 +378,6 @@ export default function HomeContent({ onNavigate }: HomePageProps) {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-            {/* Testimonial 1 */}
             <div className="bg-white p-8 rounded-xl shadow-xl border border-gray-100 hover:shadow-2xl transition-shadow duration-300 transform hover:-translate-y-1">
               <div className="flex items-center mb-6">
                 <div className="h-12 w-12 rounded-full bg-gradient-to-r from-purple-500 to-purple-700 flex items-center justify-center text-white font-bold text-lg">
@@ -401,7 +400,6 @@ export default function HomeContent({ onNavigate }: HomePageProps) {
               </p>
             </div>
 
-            {/* Testimonial 2 */}
             <div className="bg-white p-8 rounded-xl shadow-xl border border-gray-100 hover:shadow-2xl transition-shadow duration-300 transform hover:-translate-y-1">
               <div className="flex items-center mb-6">
                 <div className="h-12 w-12 rounded-full bg-gradient-to-r from-purple-500 to-purple-700 flex items-center justify-center text-white font-bold text-lg">
@@ -424,7 +422,6 @@ export default function HomeContent({ onNavigate }: HomePageProps) {
               </p>
             </div>
 
-            {/* Testimonial 3 */}
             <div className="bg-white p-8 rounded-xl shadow-xl border border-gray-100 hover:shadow-2xl transition-shadow duration-300 transform hover:-translate-y-1">
               <div className="flex items-center mb-6">
                 <div className="h-12 w-12 rounded-full bg-gradient-to-r from-purple-500 to-purple-700 flex items-center justify-center text-white font-bold text-lg">
@@ -448,7 +445,7 @@ export default function HomeContent({ onNavigate }: HomePageProps) {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

@@ -429,6 +429,7 @@ export default function SettingsPage() {
                               alt="Profile"
                               fill
                               sizes="128px"
+                              className="rounded-full"
                               style={{objectFit: 'cover'}}
                             />
                           ) : (

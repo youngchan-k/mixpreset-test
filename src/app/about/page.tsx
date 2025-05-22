@@ -115,7 +115,7 @@ export default function AboutPage() {
       </div>
 
       {/* Team Section */}
-      <div className="py-16 px-4 sm:px-6 lg:px-8">
+      {/* <div className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Our Team</h2>
@@ -178,7 +178,7 @@ export default function AboutPage() {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Join Us CTA */}
       <div className="bg-purple-800 text-white py-16 px-4 sm:px-6 lg:px-8">

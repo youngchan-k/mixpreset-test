@@ -31,68 +31,85 @@ export default function TermsPage() {
               <div className="prose prose-lg max-w-none text-gray-700">
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">1. Introduction</h2>
                 <p>
-                  Welcome to MIXPRESET. These Terms of Service govern your use of our website, products, and services.
-                  By accessing or using MIXPRESET, you agree to be bound by these Terms.
+                  Welcome to MIXPRESET. These Terms of Service ("Terms") govern your access to and use of the MIXPRESET website, products, and services (collectively, the "Services").
+                  By accessing or using the Services, you agree to be bound by these Terms. If you do not agree to these Terms, you must not use the Services.
                 </p>
 
                 <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-8">2. Use License</h2>
                 <p>
-                  We grant you a limited, non-exclusive, non-transferable license to download, install, and use our presets
-                  subject to the following restrictions:
+                  You are granted a limited, non-exclusive, non-transferable, and revocable license to download, install, and use presets purchased from MIXPRESET, subject to the following conditions:
                 </p>
                 <ul className="list-disc pl-6 my-4">
                   <li className="mb-2">All preset purchases include a commercial use license.</li>
-                  <li className="mb-2">Redistribution of our presets is strictly prohibited.</li>
-                  <li className="mb-2">Reselling or sharing our presets with third parties is not permitted.</li>
+                  <li className="mb-2">Redistribution, resale, or sharing of presets with third parties is strictly prohibited.</li>
+                  <li className="mb-2">You may not rent, lease, loan, sell, sublicense, or otherwise transfer any rights in the presets to any third party.</li>
                 </ul>
 
                 <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-8">3. Credit System and Billing</h2>
                 <p>
-                  Our services operate on a credit-based model. You agree to pay for the credit packs you purchase.
-                  Credits are non-refundable but do not expire. You can use your credits to download presets based on their
-                  listed credit cost.
+                  MIXPRESET operates on a credit-based model. By purchasing credit packs, you agree to pay all applicable fees.
+                  Credits are non-refundable but do not expire.
+                  Credits can be used to download presets according to their listed credit cost. All payments are final.
                 </p>
 
                 <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-8">4. Intellectual Property</h2>
                 <p>
-                  All content on MIXPRESET, including but not limited to presets, courses, text, graphics, logos, icons,
-                  and software, is the property of MIXPRESET or its content suppliers and is protected by international
-                  copyright laws.
+                  All content on MIXPRESET, including but not limited to presets, courses, text, graphics, logos, icons, and software,
+                  is the property of MIXPRESET or its content suppliers and is protected by international copyright and intellectual property laws.
+                  No content may be copied, modified, distributed, or used for any purpose other than as expressly permitted in these Terms.
                 </p>
 
                 <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-8">5. User Accounts</h2>
                 <p>
-                  You are responsible for maintaining the confidentiality of your account information and for all activities
-                  that occur under your account. You agree to notify us immediately of any unauthorized use of your account.
+                  You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account.
+                  You agree to notify MIXPRESET immediately of any unauthorized use of your account. MIXPRESET reserves the right to suspend or terminate accounts that are suspected of unauthorized activity or violation of these Terms.
                 </p>
 
-                <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-8">6. Disclaimer of Warranties</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-8">6. Acceptable Use</h2>
                 <p>
-                  Our services are provided "as is" without any warranties, expressed or implied. We do not guarantee that
-                  our services will be error-free or uninterrupted.
+                  You agree not to use the Services:
+                </p>
+                <ul className="list-disc pl-6 my-4">
+                  <li className="mb-2">For any unlawful purpose or in violation of any applicable law or regulation.</li>
+                  <li className="mb-2">To transmit or store any content that is abusive, defamatory, obscene, or otherwise objectionable. </li>
+                  <li className="mb-2">To interfere with or disrupt the Services or servers or networks connected to the Services.</li>
+                  <li className="mb-2">To access the Services through automated means, including bots or scripts, without express permission.</li>
+                </ul>
+
+                <p>
+                  MIXPRESET reserves the right to remove content or suspend accounts that violate these guidelines.
                 </p>
 
-                <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-8">7. Limitation of Liability</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-8">7. Disclaimer of Warranties </h2>
                 <p>
-                  MIXPRESET shall not be liable for any indirect, incidental, special, consequential, or punitive damages
-                  resulting from your use of or inability to use our services.
+                  The Services are provided "as is" and "as available," without any warranties of any kind, either express or implied.
+                  MIXPRESET does not warrant that the Services will be uninterrupted, error-free, or secure, or that any defects will be corrected.
                 </p>
 
-                <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-8">8. Governing Law</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-8">8. Limitation of Liability</h2>
                 <p>
-                  These Terms shall be governed by and construed in accordance with the laws of the jurisdiction in which
-                  MIXPRESET is established, without regard to its conflict of law provisions.
+                  To the maximum extent permitted by law, MIXPRESET shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from or related to your use of or inability to use the Services, even if advised of the possibility of such damages.
                 </p>
 
-                <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-8">9. Changes to Terms</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-8">9. Term and Termination</h2>
                 <p>
-                  We reserve the right to modify these Terms at any time. We will provide notice of significant changes
-                  through our website or by sending an email to users.
+                  These Terms remain in effect until terminated by either you or MIXPRESET. You may terminate your account at any time. MIXPRESET may terminate or suspend your access to the Services at any time, with or without notice, for conduct that it believes violates these Terms or is otherwise harmful to other users or the Services.
+                  Upon termination, your right to use the Services will immediately cease, and any content associated with your account may be deleted.
                 </p>
 
-                <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-8">10. Contact Information</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-8">10. Changes to Terms</h2>
                 <p>
-                  If you have any questions about these Terms, please contact us at
+                  MIXPRESET reserves the right to modify these Terms at any time. Notice of significant changes will be provided through the website or via email. Your continued use of the Services after changes become effective constitutes your acceptance of the revised Terms.
+                </p>
+
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-8">11. Governing Law</h2>
+                <p>
+                  These Terms are governed by and construed in accordance with the laws of the jurisdiction in which MIXPRESET is established, without regard to its conflict of law provisions. Any disputes arising from these Terms or your use of the Services shall be resolved in the courts of that jurisdiction.
+                </p>
+
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-8">12. Contact Information</h2>
+                <p>
+                  For questions or concerns regarding these Terms, please contact:
                   <a href="mailto:contact@mixpreset.com" className="text-purple-600 hover:text-purple-800 ml-1">contact@mixpreset.com</a>.
                 </p>
               </div>

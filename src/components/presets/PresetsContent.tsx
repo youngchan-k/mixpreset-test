@@ -668,11 +668,11 @@ function PresetsPage({ onNavigate, onAuthRequired, initialTab = 'premium' }: Pre
                     placeholder="Search presets..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full border border-gray-300 rounded-xl py-3 pl-10 pr-4 text-black focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
-                  <div className="absolute left-3 top-3.5">
-                    <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0118 0z" />
+                  <div className="absolute left-3 top-3">
+                    <svg className="h-6 w-6 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0118 0z" />
                     </svg>
                   </div>
                 </div>

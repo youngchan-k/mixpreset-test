@@ -148,6 +148,14 @@ export default function Footer() {
               </li>
               <li>
                 <button
+                  onClick={() => handleNavigation('/refund')}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  Refund Policy
+                </button>
+              </li>
+              <li>
+                <button
                   onClick={() => handleNavigation('/licenses')}
                   className="text-gray-400 hover:text-white transition-colors"
                 >
