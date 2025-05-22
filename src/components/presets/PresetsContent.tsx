@@ -1000,7 +1000,7 @@ function PresetsPage({ onNavigate, onAuthRequired, initialTab = 'premium' }: Pre
               {/* Filter Results Summary - Remove favorites button from here */}
               <div className="mt-6 flex items-center justify-between">
                 <p className="text-lg text-left">
-                  <span className="font-medium">
+                  <span className="font-medium text-black">
                     {searchTerm ||
                      Object.values(filters).some(v => v !== null && v !== '' && v !== filters.category) ||
                      showFavoritesOnly ?
@@ -1009,7 +1009,7 @@ function PresetsPage({ onNavigate, onAuthRequired, initialTab = 'premium' }: Pre
                      showFavoritesOnly ?
                       totalPresets : immediateDisplayCount) === 1 ? 'result' : 'results'}
                   </span>
-                  {searchTerm && <span className="text-gray-600"> matching "<span className="text-purple-600">{searchTerm}</span>"</span>}
+                  {searchTerm && <span className="text-black md:text-gray-600"> matching "<span className="text-purple-600">{searchTerm}</span>"</span>}
                   {showFavoritesOnly && <span className="text-purple-600 ml-1 font-medium"> in favorites</span>}
                 </p>
               </div>
