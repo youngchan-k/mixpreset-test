@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { hasAdminAccess } from '@/lib/permissions';
@@ -175,12 +176,19 @@ export default function Navbar({ isAuthenticated: propIsAuthenticated, onLogout:
           {/* Logo */}
           <Link
             href="/"
-            className={`font-bold text-2xl ${
+            className={`flex items-center space-x-2 font-bold text-2xl ${
               isScrolled || isAuthPage ? 'text-gray-900' : 'text-white'
             }`}
             style={{ color: isScrolled || isAuthPage ? '#111827' : 'white' }}
           >
-            MIXPRESET
+            <Image
+              src={isScrolled || isAuthPage ? '/logo/logo_black.png' : '/logo/logo_white.png'}
+              alt="MIXPRESET Logo"
+              width={32}
+              height={32}
+              className="w-8 h-8"
+            />
+            <span>MIXPRESET</span>
           </Link>
 
           {/* Desktop Navigation */}

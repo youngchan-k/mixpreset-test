@@ -16,7 +16,7 @@ export default function HomeContent({ onNavigate }: HomePageProps) {
         title="Worldwide Mixing and Mastering Platform"
         subtitle="Connect with authentic sound engineers worldwide, and get instant access to numerous presets ACTUALLY used in billboard songs "
         titleGradient={true}
-        badge={{ text: "#1 GLOBAL Mixing PLATFORM" }}
+        badge={{ text: "#1 GLOBAL MIXING PLATFORM" }}
         showWaveAnimation={false}
         showSocialProof={true}
         socialProofText="Trusted by music professionals and leading studios worldwide"

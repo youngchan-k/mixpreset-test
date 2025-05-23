@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
 export default function Footer() {
@@ -31,7 +32,16 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Company Info */}
           <div>
-            <h3 className="text-xl font-bold mb-4">MIXPRESET</h3>
+            <div className="flex items-center space-x-2 mb-4">
+              <Image
+                src="/logo/logo_white.png"
+                alt="MIXPRESET Logo"
+                width={24}
+                height={24}
+                className="w-6 h-6"
+              />
+              <h3 className="text-xl font-bold">MIXPRESET</h3>
+            </div>
             <p className="text-gray-400 mb-4">Worldwide mixing and mastering platform connecting artists with professional engineers.</p>
             <div className="flex space-x-4">
               {/* Instagram */}
