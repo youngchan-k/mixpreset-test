@@ -15,7 +15,7 @@ export function middleware(request: NextRequest) {
 // Configure the middleware to match specific paths
 export const config = {
   matcher: [
-    // Match specific paths, omit presets since we have special handling
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    // Match specific paths, exclude static assets and logo files
+    '/((?!api|_next/static|_next/image|logo).*)',
   ],
 };

@@ -22,6 +22,11 @@ const robotoMono = Roboto_Mono({
 export const metadata: Metadata = {
   title: "MIXPRESET - Worldwide mixing and mastering platform",
   description: "Professional worldwide mixing and mastering platform for your productions",
+  icons: {
+    icon: '/logo/logo_black.png',
+    shortcut: '/logo/logo_black.png',
+    apple: '/logo/logo_black.png',
+  },
 };
 
 export const viewport: Viewport = {
