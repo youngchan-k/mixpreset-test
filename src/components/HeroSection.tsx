@@ -7,6 +7,7 @@ interface HeroSectionProps {
   title: string;
   subtitle?: string;
   backgroundImage?: string;
+  backgroundVideo?: string;
   imageDarken?: boolean;
   customGradient?: string;
   buttons?: ReactNode;
@@ -35,6 +36,7 @@ const HeroSection = ({
   title,
   subtitle,
   backgroundImage = 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+  backgroundVideo,
   imageDarken = true,
   customGradient,
   buttons,
@@ -181,22 +183,45 @@ const HeroSection = ({
       {/* Background gradient overlay */}
       <div
         className={`absolute inset-0 z-10 ${
-          customGradient || 'bg-gradient-to-r from-purple-600/90 to-purple-800/90'
+          customGradient || 'bg-gradient-to-r from-purple-600/60 to-purple-800/60'
         }`}
       ></div>
 
       {/* Background image with next/image */}
       <div className="absolute inset-0">
-        <Image
-          src={backgroundImage}
-          alt="Background"
-          fill
-          priority
-          quality={85}
-          sizes="100vw"
-          className={`object-cover object-center ${imageDarken ? 'opacity-90' : 'opacity-100'} transition-opacity duration-500`}
-          style={parallax ? { transform: `translateY(${offset}px)` } : undefined}
-        />
+        {backgroundVideo ? (
+          <video
+            className={`w-full h-full object-cover object-center ${imageDarken ? 'opacity-90' : 'opacity-100'} transition-opacity duration-500`}
+            style={parallax ? { transform: `translateY(${offset}px)` } : undefined}
+            autoPlay
+            muted
+            loop
+            playsInline
+          >
+            <source src={backgroundVideo} type="video/mp4" />
+            {/* Fallback to background image if video fails to load */}
+            <Image
+              src={backgroundImage}
+              alt="Background"
+              fill
+              priority
+              quality={85}
+              sizes="100vw"
+              className={`object-cover object-center ${imageDarken ? 'opacity-90' : 'opacity-100'} transition-opacity duration-500`}
+            />
+          </video>
+        ) : (
+          <Image
+            src={backgroundImage}
+            alt="Background"
+            fill
+            priority
+            quality={85}
+            sizes="100vw"
+            className={`object-cover object-center ${imageDarken ? 'opacity-90' : 'opacity-100'} transition-opacity duration-500`}
+            style={parallax ? { transform: `translateY(${offset}px)` } : undefined}
+          />
+        )}
       </div>
 
       {/* Pattern overlay */}

@@ -15,6 +15,7 @@ export default function HomeContent({ onNavigate }: HomePageProps) {
       <HeroSection
         title="Worldwide Mixing and Mastering Platform"
         subtitle="Connect with authentic sound engineers worldwide, and get instant access to numerous presets ACTUALLY used in billboard songs "
+        backgroundVideo="/home/hero.mp4"
         titleGradient={true}
         badge={{ text: "#1 GLOBAL MIXING PLATFORM" }}
         showWaveAnimation={false}
@@ -212,7 +213,7 @@ export default function HomeContent({ onNavigate }: HomePageProps) {
                 <div className="relative z-10 rounded-xl overflow-hidden shadow-2xl">
                   <div className="relative w-full aspect-w-16 aspect-h-9">
                     <Image
-                      src="https://images.unsplash.com/photo-1598653222000-6b7b7a552625?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1770&q=80"
+                      src="/home/preset.png"
                       alt="Audio mixing console"
                       className="rounded-xl"
                       fill
@@ -281,7 +282,7 @@ export default function HomeContent({ onNavigate }: HomePageProps) {
                 <div className="relative z-10 rounded-xl overflow-hidden shadow-2xl">
                   <div className="relative w-full aspect-w-16 aspect-h-9">
                     <Image
-                      src="https://images.unsplash.com/photo-1556761175-b413da4baf72?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1674&q=80"
+                      src="/home/community.png"
                       alt="Music producers collaborating"
                       className="rounded-xl"
                       fill
