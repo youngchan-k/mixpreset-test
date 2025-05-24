@@ -9,7 +9,11 @@ interface PolarOrderPayload {
 }
 
 export const POST = Webhooks({
-  webhookSecret: process.env.POLAR_WEBHOOK_SECRET || '',
+  webhookSecret: process.env.POLAR_WEBHOOK_SECRET!,
+  onPayload: async (payload) => {
+    // Handle all webhook events
+    console.log("Polar webhook received:", payload.type);
+  },
   onOrderCreated: async (order) => {
     // Handle successful order
     try {
@@ -42,5 +46,9 @@ export const POST = Webhooks({
     } catch (error) {
       console.error("Error processing Polar webhook:", error);
     }
+  },
+  onCustomerStateChanged: async (customerState) => {
+    // Handle customer state changes if needed
+    console.log("Polar webhook - customer state changed:", customerState);
   },
 });

@@ -84,11 +84,11 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
           userData = JSON.parse(userDataStr);
         }
 
-        // Redirect to Polar checkout
+        // Redirect to Polar checkout with proper parameters
         const params = new URLSearchParams({
           price: (amount * 100).toString(), // Convert to cents
           currency: 'USD',
-          success_url: window.location.origin + '/profile/credits?payment_success=true',
+          success_url: window.location.origin + '/profile/credits?checkout_id={CHECKOUT_ID}&payment_success=true',
           cancel_url: window.location.origin + '/profile/credits?payment_cancelled=true',
           // Add metadata to identify the transaction later
           'metadata[userId]': userData.uid || '',
@@ -97,7 +97,8 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
           'metadata[credits]': planName.includes('credits') ? planName.split(' ')[0] : '0'
         });
 
-        window.location.href = `/api/checkout/polar?${params.toString()}`;
+        // Use the main checkout route as per Polar documentation
+        window.location.href = `/checkout?${params.toString()}`;
         return;
       } catch (error) {
         console.error('Error redirecting to Polar:', error);
